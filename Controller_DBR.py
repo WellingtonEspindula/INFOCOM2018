@@ -1,4 +1,3 @@
-
 from ryu.base import app_manager
 from ryu.controller import (ofp_event, dpset)
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, DEAD_DISPATCHER
@@ -7,10 +6,10 @@ from ryu.ofproto import ofproto_v1_3, ether
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet, ipv4, arp
 from shutil import copyfile
-from sets import Set
-import Queue as Q
+# from sets import Set
+# import Queue as Q
 import pickle
-import sys, os, commands, time, random, math, pickle
+import sys, os, time, random, math, pickle
 import networkx as nx
 import itertools
 import random
@@ -33,6 +32,8 @@ PATH_SIZE = 13
 BW_THRESHOLD = 4500000.0
 DISTANCE_FIX = PATH_SIZE / BW_THRESHOLD
 BW_BITRATE = 2000000.0
+
+
 # Main class for BQoEP Controller
 class BQoEPathApi(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -41,7 +42,7 @@ class BQoEPathApi(app_manager.RyuApp):
         'wsgi': WSGIApplication
     }
 
-    #Constructor
+    # Constructor
     def __init__(self, *args, **kwargs):
         super(BQoEPathApi, self).__init__(*args, **kwargs)
         wsgi = kwargs['wsgi']
@@ -56,15 +57,14 @@ class BQoEPathApi(app_manager.RyuApp):
         self.loss = []
         self.links = []
         self.dpset = kwargs['dpset']
-        self.dp_dict = {}   # dictionary of datapaths
-        self.elist = [] # edges list to the graph
-        self.edges_ports = {} # dictionary of ports {src: {dst: port, dst2: port2}, ...}
-        self.parse_graph() # call the function that populates the priors variables
-        self.graph = nx.MultiGraph() # create the graph
-        self.graph.add_edges_from(self.elist) # add edges to the graph
-        self.possible_paths = {} # dictionary {src-id : [[path1],[path2]]}
+        self.dp_dict = {}  # dictionary of datapaths
+        self.elist = []  # edges list to the graph
+        self.edges_ports = {}  # dictionary of ports {src: {dst: port, dst2: port2}, ...}
+        self.parse_graph()  # call the function that populates the priors variables
+        self.graph = nx.MultiGraph()  # create the graph
+        self.graph.add_edges_from(self.elist)  # add edges to the graph
+        self.possible_paths = {}  # dictionary {src-id : [[path1],[path2]]}
         self.current_path = None
-
 
     # Descr: function that receive switch features events (pre-built function)
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -75,33 +75,32 @@ class BQoEPathApi(app_manager.RyuApp):
 
         dpid = datapath.id
 
-        #print('************')
-        #print(ofproto)
-        #print(ev)
-        #print(dpid)
-        #count = 1
-        #for p in self.elist:
+        # print('************')
+        # print(ofproto)
+        # print(ev)
+        # print(dpid)
+        # count = 1
+        # for p in self.elist:
         #  self.logger.info('*** %s -> %s', p[0], p[1])
         #  self.graph[p[0]][p[1]] = {'weight': count, 'rtt': count - 1}
         #  self.graph[p[1]][p[0]] = {'weight': count, 'rtt': count - 1}
         #  count = count + 1
 
-       #print(self.edges_ports)
-        #print('************')
+        # print(self.edges_ports)
+        # print('************')
 
-        self.dp_dict[dpid] = datapath # saving datapath on a dictionary
+        self.dp_dict[dpid] = datapath  # saving datapath on a dictionary
 
         # install table-miss flow entry 
         # drop unknown packets
         match = parser.OFPMatch()
-        actions = [] # empty actions == drop packets
+        actions = []  # empty actions == drop packets
         self.add_flow(datapath, 0, match, actions)
 
         # flow mod to block ipv6 traffic (not related to the work)
         match = parser.OFPMatch(eth_type=0x86dd)
         actions = []
         self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, match, actions)
-
 
     # Descr: function that installs flow entry on switch
     # Args: datapath: datapath of the switch to install the entry,
@@ -123,7 +122,7 @@ class BQoEPathApi(app_manager.RyuApp):
     # Not used in this version of BQoEP, but will be on next release
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
-        
+
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
@@ -138,17 +137,17 @@ class BQoEPathApi(app_manager.RyuApp):
         p_arp = pkt.get_protocol(arp.arp)
 
         header_list = dict((p.protocol_name, p)
-                        for p in pkt.protocols if type(p) != str)
+                           for p in pkt.protocols if type(p) != str)
 
-        ipv4_src = ip.src if ip != None else p_arp.src_ip
-        ipv4_dst = ip.dst if ip != None else p_arp.dst_ip
+        ipv4_src = ip.src if ip is not None else p_arp.src_ip
+        ipv4_dst = ip.dst if ip is not None else p_arp.dst_ip
 
         dst = eth.dst
         src = eth.src
 
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
-        
+
         if ARP in header_list:
             self.logger.info("ARP packet in s%s, src: %s, dst: %s, in_port: %s", dpid, src, dst, in_port)
         else:
@@ -157,42 +156,42 @@ class BQoEPathApi(app_manager.RyuApp):
         # ipv4 addresses
         src_id = reg.search(ipv4_src).group(1)
         dst_id = reg.search(ipv4_dst).group(1)
-        src_host = "h"+src_id
-        dst_host = "h"+dst_id
-        #defining switch paths to install rules
+        src_host = "h" + src_id
+        dst_host = "h" + dst_id
+        # defining switch paths to install rules
 
         paths = list(nx.all_simple_paths(self.graph, src_host, dst_host, PATH_SIZE))
         if len(paths) > 0:
-            #check to see if already exists a path (rules in switches) between such hosts
-            key = ipv4_src+'-'+ipv4_dst
+            # check to see if already exists a path (rules in switches) between such hosts
+            key = ipv4_src + '-' + ipv4_dst
             if key in self.paths_defineds.keys():
                 self.logger.info("already created this path")
             else:
                 self.logger.info("we must create this path")
                 self.paths_defineds[key] = paths
-                
-                #first we need to check how many paths we have at all minimum cutoff is PATH_SIZE
+
+                # first we need to check how many paths we have at all minimum cutoff is PATH_SIZE
                 path_num = len(paths)
-                if path_num > MULTIPATH_LEVEL: # if num of paths is bigger than MULTIPATH_LEVEL slices the array
+                if path_num > MULTIPATH_LEVEL:  # if num of paths is bigger than MULTIPATH_LEVEL slices the array
                     paths = paths[:MULTIPATH_LEVEL]
-                self.logger.info("we have: %s path(s)",path_num)
+                self.logger.info("we have: %s path(s)", path_num)
                 self.logger.info("Using %s paths: ", len(paths))
                 for path in paths:
                     self.logger.info("\t%s", path)
                 group_dict = self.get_group_routers(paths)
 
-                #print (mod_group_entry(paths))
+                # print (mod_group_entry(paths))
                 self.create_route(paths, group_dict)
 
             # create mac host to send arp reply
-            mac_host_dst = "00:04:00:00:00:0"+dst_id if len(dst_id) == 1 else "00:04:00:00:00:"+dst_id
-            
-            #check to see if it is an ARP message, so if it is send a reply
+            mac_host_dst = "00:04:00:00:00:0" + dst_id if len(dst_id) == 1 else "00:04:00:00:00:" + dst_id
+
+            # check to see if it is an ARP message, so if it is send a reply
             if ARP in header_list:
-                self.send_arp(datapath, arp.ARP_REPLY, mac_host_dst, src, 
-                    ipv4_dst, ipv4_src, src, ofproto.OFPP_CONTROLLER, in_port)
-            else:   # if it is not ARP outputs the message to the corresponding port
-                #print self.edges_ports
+                self.send_arp(datapath, arp.ARP_REPLY, mac_host_dst, src,
+                              ipv4_dst, ipv4_src, src, ofproto.OFPP_CONTROLLER, in_port)
+            else:  # if it is not ARP outputs the message to the corresponding port
+                # print self.edges_ports
                 out_port = self.edges_ports[paths[0][1]][paths[0][2]]
                 actions = [parser.OFPActionOutput(out_port)]
                 data = None
@@ -203,7 +202,6 @@ class BQoEPathApi(app_manager.RyuApp):
                 datapath.send_msg(out)
         else:
             self.logger.info("Destination unreacheable")
-
 
     def switch_from_host(self, path):
         ran_lower_bound = 1
@@ -233,9 +231,9 @@ class BQoEPathApi(app_manager.RyuApp):
             switch_index = int(path_rest) + internet_lower_bound - 1
 
         if switch_index > 0:
-          return 's' + str(switch_index)
+            return 's' + str(switch_index)
         else:
-          return path
+            return path
 
     def host_from_switch(self, path):
         ran_lower_bound = 1
@@ -275,7 +273,6 @@ class BQoEPathApi(app_manager.RyuApp):
         else:
             return path
 
-
     def ip_from_host(self, host):
         if host == "src1":
             return "10.0.0.249"
@@ -293,35 +290,34 @@ class BQoEPathApi(app_manager.RyuApp):
             first = host[0]
             if first == 'u':
                 ipfinal = host.split("u")[1]
-                return "10.0.0." + str(int(ipfinal)) #removing leading zeros
+                return "10.0.0." + str(int(ipfinal))  # removing leading zeros
             elif (first == 'r' or first == 'm' or first == 'a' or first == 'c' or first == 'i' or first == 's'):
                 sn = self.switch_from_host(host)
                 restsn = sn[1:]
                 ipfinal = 200 + int(restsn)
                 return "10.0.0." + str(ipfinal)
 
-
     def deploy_any_path(self, path):
-        paths = [path,  path[::-1]]
+        paths = [path, path[::-1]]
         for path in paths:
-            for i in xrange(1, len(path) - 1):
-                #instaling rule for the i switch
+            for i in range(1, len(path) - 1):
+                # instaling rule for the i switch
                 sn = self.switch_from_host(path[i])
                 dpid = int(sn[1:])
-                _next = self.switch_from_host(path[i+1])
+                _next = self.switch_from_host(path[i + 1])
                 datapath = self.dp_dict[dpid]
                 parser = datapath.ofproto_parser
                 ofproto = datapath.ofproto
 
                 out_port = self.edges_ports["s%s" % dpid][_next]
                 actions = [parser.OFPActionOutput(out_port)]
-                self.logger.info("installing rule from %s to %s %s %s", path[i], path[i+1], str(path[0][1:]), str(path[-1][1:]))
-                ip_src = self.ip_from_host(str(path[0])) # to get the id 
+                self.logger.info("installing rule from %s to %s %s %s", path[i], path[i + 1], str(path[0][1:]),
+                                 str(path[-1][1:]))
+                ip_src = self.ip_from_host(str(path[0]))  # to get the id
                 ip_dst = self.ip_from_host(str(path[-1]))
                 match = parser.OFPMatch(eth_type=0x0800, ipv4_src=ip_src, ipv4_dst=ip_dst)
                 self.add_flow(datapath, 1024, match, actions)
         self.current_path = path
-
 
     # Descr: Method responsible for deploying the rule chosen for a pair src-dst
     # Args: srcdst: pair of two hosts separeted by a '-': Ex: 'h1-h2'
@@ -337,10 +333,10 @@ class BQoEPathApi(app_manager.RyuApp):
                 datapath = self.dp_dict[int(switch[1:])]
                 parser = datapath.ofproto_parser
                 match = parser.OFPMatch(eth_type=0x0800)
-                mod = parser.OFPFlowMod(datapath=datapath, 
+                mod = parser.OFPFlowMod(datapath=datapath,
                                         command=datapath.ofproto.OFPFC_DELETE,
-                                        out_port = datapath.ofproto.OFPP_ANY,
-                                        out_group= datapath.ofproto.OFPP_ANY,
+                                        out_port=datapath.ofproto.OFPP_ANY,
+                                        out_group=datapath.ofproto.OFPP_ANY,
                                         match=match)
 
         # Check to see if the src-dst pair has paths listed and if true deploy
@@ -350,21 +346,22 @@ class BQoEPathApi(app_manager.RyuApp):
                 path = self.possible_paths[srcdst][int(rule_id)]
                 print(path)
                 # [1, 2, 3, 4, 5, 6]
-                paths = [path,  path[::-1]]
+                paths = [path, path[::-1]]
                 print(paths)
                 for path in paths:
-                    for i in xrange(1, len(path) - 1):
-                        #instaling rule for the i switch
+                    for i in range(1, len(path) - 1):
+                        # instaling rule for the i switch
                         dpid = int(path[i][1:])
-                        _next = path[i+1]
+                        _next = path[i + 1]
                         datapath = self.dp_dict[dpid]
                         parser = datapath.ofproto_parser
                         ofproto = datapath.ofproto
 
                         out_port = self.edges_ports["s%s" % dpid][_next]
                         actions = [parser.OFPActionOutput(out_port)]
-                        self.logger.info("installing rule from %s to %s %s %s", path[i], path[i+1], str(path[0][1:]), str(path[-1][1:]))
-                        ip_src = "10.0.0." + str(path[0][1:]) # to get the id 
+                        self.logger.info("installing rule from %s to %s %s %s", path[i], path[i + 1], str(path[0][1:]),
+                                         str(path[-1][1:]))
+                        ip_src = "10.0.0." + str(path[0][1:])  # to get the id
                         ip_dst = "10.0.0." + str(path[-1][1:])
                         match = parser.OFPMatch(eth_type=0x0800, ipv4_src=ip_src, ipv4_dst=ip_dst)
                         self.add_flow(datapath, 1024, match, actions)
@@ -379,7 +376,7 @@ class BQoEPathApi(app_manager.RyuApp):
     # Descr: Function that parses the topology.txt file and creates a graph from it
     # Args: None
     def parse_graph(self):
-        file = open('topology.txt','r')
+        file = open('topology.txt', 'r')
         reg = re.compile('-eth([0-9]+):([\w]+)-eth[0-9]+')
         regSwitch = re.compile('(s[0-9]+) lo')
 
@@ -420,13 +417,13 @@ class BQoEPathApi(app_manager.RyuApp):
 
         actions = [datapath.ofproto_parser.OFPActionOutput(output)]
 
-        datapath.send_packet_out(in_port=in_port, actions = actions, data=pkt.data)  
+        datapath.send_packet_out(in_port=in_port, actions=actions, data=pkt.data)
+
+    # Class responsible for the definitions and exposure of webservices
 
 
-
-# Class responsible for the definitions and exposure of webservices
 class BQoEPathController(ControllerBase):
-    def __init__(self,req, link, data, **config):
+    def __init__(self, req, link, data, **config):
         super(BQoEPathController, self).__init__(req, link, data, **config)
         self.bqoe_path_spp = data[bqoe_path_api_instance_name]
 
@@ -434,34 +431,35 @@ class BQoEPathController(ControllerBase):
     def adm_weights(self, req, **kwargs):
         src = kwargs['method'][11:].split('-')[0]
         dst = kwargs['method'][11:].split('-')[1]
-        
+
         graph = self.bqoe_path_spp.get_graph()
-        for u,v,d in graph.edges(data=True):
+        for u, v, d in graph.edges(data=True):
             p1 = self.bqoe_path_spp.host_from_switch(u)
             p2 = self.bqoe_path_spp.host_from_switch(v)
-            if ((p1 == "a2" and p2 == "a3") or (p1 == "c2" and p2 == "c1") or (p1 == "m5" and p2 == "m1") or (p1 == "a1" and p2 == "a4") or (p1 == "m3" and p2 == "m2")):
+            if ((p1 == "a2" and p2 == "a3") or (p1 == "c2" and p2 == "c1") or (p1 == "m5" and p2 == "m1") or (
+                    p1 == "a1" and p2 == "a4") or (p1 == "m3" and p2 == "m2")):
                 d['weight'] = 1000
             elif (p1 == "m5" and p2 == "m4"):
                 d['weight'] = 3
             else:
                 d['weight'] = 1
-        
+
         min_splen = 100000000
         min_sp = []
         if dst == "all":
             destinations_array = ["cdn1", "cdn2", "cdn3", "ext1"]
             random.shuffle(destinations_array)
             for dest in destinations_array:
-                prev, dist = nx.bellman_ford(graph,source=src,weight='weight')
-                sp = []
-                sp.append(dest)
-                pv = prev[dest]
+                prev, dist = nx.algorithms.shortest_paths.bellman_ford_predecessor_and_distance(graph, source=src,
+                                                                                                weight='weight')
+                sp = [dest]
+                pv = prev[dest][0]
                 while pv != src:
                     sp.append(pv)
-                    pv = prev[pv]
+                    pv = prev[pv][0]
                 sp.append(src)
 
-                splen = dist[dest] 
+                splen = dist[dest]
                 if splen < min_splen:
                     min_sp = sp
                     min_splen = splen
@@ -470,8 +468,8 @@ class BQoEPathController(ControllerBase):
         for elem in min_sp:
             humanmin_sp.append(self.bqoe_path_spp.host_from_switch(elem))
 
-        result = dict(dst = humanmin_sp[0], dest_ip=self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), path = humanmin_sp)
+        result = dict(dst=humanmin_sp[0], dest_ip=self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), path=humanmin_sp)
         self.bqoe_path_spp.deploy_any_path(humanmin_sp)
 
         body = json.dumps(result, indent=4)
-        return Response(content_type='application/json', body=body)
+        return Response(content_type='application/json', body=body, charset="UTF-8")
