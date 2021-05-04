@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 echo "[INFO] Cleaning previous mininet config..."
 sudo mn -c
