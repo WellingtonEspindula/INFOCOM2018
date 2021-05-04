@@ -38,7 +38,7 @@ def link_switch_to_host(net, host, switch, port_host, port_switch, is_aux, degra
     net.addLink(host, switch, port_host, port_switch, **degradation)
     if is_aux:
         switches_to_aux_hosts[switch] = host
-    rules_map.append(dict(name=switch.name, ip=host_ip_map[host.name], port=str(port_switch)))
+    rules_map.append({'name': switch.name, 'ip': host_ip_map[host.name], 'port': str(port_switch)})
     # addRule(switch.name, hostIpMap[host.name], str(portSwitch))
 
 
@@ -49,10 +49,10 @@ def link_switch_to_switch(net, switch_a, switch_b, port_a, port_b, degradation):
     ip_b = host_ip_map[switches_to_aux_hosts[switch_b].name]
 
     # addRule(sA.name, ipB, str(pA))
-    rules_map.append(dict(name=switch_a.name, ip=ip_b, port=str(port_a)))
+    rules_map.append({'name': switch_a.name, 'ip': ip_b, 'port': str(port_a)})
 
     # addRule(sB.name, ipA, str(pB))
-    rules_map.append(dict(name=switch_b.name, ip=ip_a, port=str(port_b)))
+    rules_map.append({'name': switch_b.name, 'ip': ip_a, 'port': str(port_b)})
 
 
 def deploy_flow_rules():
@@ -70,28 +70,28 @@ def evaluate_topology():
 
     net.addController('c0', RemoteController, ip="127.0.0.1", port=6633)
 
-    link100_mbps = dict(bw=20, delay='15ms')
-    link1_gbps = dict(bw=200, delay='5ms')
-    linknodeg = dict()
+    link100_mbps = {'bw': 20, 'delay': '15ms'}
+    link1_gbps = {'bw': 200, 'delay': '5ms'}
+    linknodeg = {}
 
-    link100_mbps_1 = dict(bw=20, delay='1ms')
-    link100_mbps_4 = dict(bw=20, delay='4ms')
-    link100_mbps_5 = dict(bw=20, delay='5ms')
-    link100_mbps_6 = dict(bw=20, delay='6ms')
-    link100_mbps_7 = dict(bw=20, delay='7ms')
-    link100_mbps_8 = dict(bw=20, delay='8ms')
-    link100_mbps_9 = dict(bw=20, delay='9ms')
-    link100_mbps_10 = dict(bw=20, delay='10ms')
-    link100_mbps_11 = dict(bw=20, delay='11ms')
+    link100_mbps_1 = {'bw': 20, 'delay': '1ms'}
+    link100_mbps_4 = {'bw': 20, 'delay': '4ms'}
+    link100_mbps_5 = {'bw': 20, 'delay': '5ms'}
+    link100_mbps_6 = {'bw': 20, 'delay': '6ms'}
+    link100_mbps_7 = {'bw': 20, 'delay': '7ms'}
+    link100_mbps_8 = {'bw': 20, 'delay': '8ms'}
+    link100_mbps_9 = {'bw': 20, 'delay': '9ms'}
+    link100_mbps_10 = {'bw': 20, 'delay': '10ms'}
+    link100_mbps_11 = {'bw': 20, 'delay': '11ms'}
 
-    link1_gbps_1 = dict(bw=200, delay='1ms')
-    link1_gbps_12 = dict(bw=200, delay='12ms')
-    link1_gbps_15 = dict(bw=200, delay='15ms')
-    link1_gbps_18 = dict(bw=200, delay='18ms')
-    link1_gbps_20 = dict(bw=200, delay='20ms')
-    link1_gbps_23 = dict(bw=200, delay='23ms')
-    link1_gbps_25 = dict(bw=200, delay='25ms')
-    link1_gbps_30 = dict(bw=200, delay='30ms')
+    link1_gbps_1 = {'bw': 200, 'delay': '1ms'}
+    link1_gbps_12 = {'bw': 200, 'delay': '12ms'}
+    link1_gbps_15 = {'bw': 200, 'delay': '15ms'}
+    link1_gbps_18 = {'bw': 200, 'delay': '18ms'}
+    link1_gbps_20 = {'bw': 200, 'delay': '20ms'}
+    link1_gbps_23 = {'bw': 200, 'delay': '23ms'}
+    link1_gbps_25 = {'bw': 200, 'delay': '25ms'}
+    link1_gbps_30 = {'bw': 200, 'delay': '30ms'}
 
     # net.addLink(Host1,   Switch1,    **linkopts )
     # Adding switches
@@ -688,6 +688,7 @@ def evaluate_topology():
     # while True:
     #     time.sleep(60)
     # CLI( net )
+    logging.info("Running...")
     net.stop()
 
 
