@@ -1,23 +1,16 @@
-from ryu.base import app_manager
-from ryu.controller import (ofp_event, dpset)
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, DEAD_DISPATCHER
-from ryu.controller.handler import set_ev_cls
-from ryu.ofproto import ofproto_v1_3, ether
-from ryu.lib.packet import packet
-from ryu.lib.packet import ethernet, ipv4, arp
-from shutil import copyfile
-# from sets import Set
-# import Queue as Q
-import pickle
-import sys, os, time, random, math, pickle
-import networkx as nx
-import itertools
+import json
 import random
 import re
-import json
-import csv
+
+import networkx as nx
 from ryu.app.wsgi import ControllerBase, WSGIApplication, route
-from copy import copy, deepcopy
+from ryu.base import app_manager
+from ryu.controller import (ofp_event, dpset)
+from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
+from ryu.controller.handler import set_ev_cls
+from ryu.lib.packet import ethernet, ipv4, arp
+from ryu.lib.packet import packet
+from ryu.ofproto import ofproto_v1_3, ether
 from webob import Response
 
 ARP = arp.arp.__name__
@@ -297,13 +290,13 @@ class BQoEPathApi(app_manager.RyuApp):
             return "10.0.0.249"
         elif host == "src2":
             return "10.0.0.250"
-        elif host == "cdn1":
+        elif host == "man1":
             return "10.0.0.251"
-        elif host == "cdn2":
+        elif host == "man2":
             return "10.0.0.252"
-        elif host == "cdn3":
+        elif host == "man3":
             return "10.0.0.253"
-        elif host == "ext1":
+        elif host == "man4":
             return "10.0.0.254"
         else:
             first = host[0]
@@ -387,8 +380,8 @@ class BQoEPathApi(app_manager.RyuApp):
                         actions = [parser.OFPActionOutput(out_port)]
                         self.logger.info("installing rule from %s to %s %s %s", path[i], path[i + 1], str(path[0][1:]),
                                          str(path[-1][1:]))
-                        ip_src = "10.0.0." + str(path[0][1:])  # to get the id
-                        ip_dst = "10.0.0." + str(path[-1][1:])
+                        ip_src = "10.0.0.{0}".format(str(path[0][1:]))  # to get the id
+                        ip_dst = "10.0.0.{0}".format(str(path[-1][1:]))
                         match = parser.OFPMatch(eth_type=0x0800, ipv4_src=ip_src, ipv4_dst=ip_dst)
                         self.add_flow(datapath, 1024, match, actions)
                 self.current_path = path
@@ -500,7 +493,7 @@ class BQoEPathController(ControllerBase):
         min_splen = 100000000
         min_sp = []
         if dst == "all":
-            destinations_array = ["cdn1", "cdn2", "cdn3", "ext1"]
+            destinations_array = ["man1", "man2", "man3", "man4"]
             random.shuffle(destinations_array)
             for dest in destinations_array:
                 prev, dist = nx.algorithms.shortest_paths.bellman_ford_predecessor_and_distance(graph, source=src,
