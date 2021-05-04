@@ -34,8 +34,12 @@ DISTANCE_FIX = PATH_SIZE / BW_THRESHOLD
 BW_BITRATE = 2000000.0
 
 
-# Main class for BQoEP Controller
 class BQoEPathApi(app_manager.RyuApp):
+    """
+    BQoEP Controller Main Class
+
+    """
+
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
     _CONTEXTS = {
         'dpset': dpset.DPSet,
@@ -66,9 +70,12 @@ class BQoEPathApi(app_manager.RyuApp):
         self.possible_paths = {}  # dictionary {src-id : [[path1],[path2]]}
         self.current_path = None
 
-    # Descr: function that receive switch features events (pre-built function)
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
+        """
+            Receives switch features events (pre-built function)
+        """
+
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
@@ -102,12 +109,22 @@ class BQoEPathApi(app_manager.RyuApp):
         actions = []
         self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, match, actions)
 
-    # Descr: function that installs flow entry on switch
-    # Args: datapath: datapath of the switch to install the entry,
-    #       priority: priority of the flow entry,
-    #       match: rule to be matched (ipv4=....,)
-    #       actions: actions to be made after a match
     def add_flow(self, datapath, priority, match, actions):
+        """
+        Installs flow entry on switch
+
+        Parameters
+        ----------
+        datapath
+            datapath of the switch to install the entry
+        priority
+            priority of the flow entry
+        match
+            rule to be matched (ipv4=....,)
+        actions
+            actions to be made after a match
+        """
+
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -118,10 +135,11 @@ class BQoEPathApi(app_manager.RyuApp):
                                 match=match, instructions=inst)
         datapath.send_msg(mod)
 
-    # Descr: pre-made function that receives OpenFlow packet_in events
-    # Not used in this version of BQoEP, but will be on next release
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
+        """ Pre-made function that receives OpenFlow packet_in events
+            Not used in this version of BQoEP, but will be on next release
+        """
 
         msg = ev.msg
         datapath = msg.datapath
@@ -145,13 +163,13 @@ class BQoEPathApi(app_manager.RyuApp):
         dst = eth.dst
         src = eth.src
 
-        dpid = datapath.id
-        self.mac_to_port.setdefault(dpid, {})
+        datapath_id = datapath.id
+        self.mac_to_port.setdefault(datapath_id, {})
 
         if ARP in header_list:
-            self.logger.info("ARP packet in s%s, src: %s, dst: %s, in_port: %s", dpid, src, dst, in_port)
+            self.logger.info("ARP packet in s%s, src: %s, dst: %s, in_port: %s", datapath_id, src, dst, in_port)
         else:
-            self.logger.info("packet in s%s, src: %s, dst: %s, in_port: %s", dpid, ipv4_src, ipv4_dst, in_port)
+            self.logger.info("packet in s%s, src: %s, dst: %s, in_port: %s", datapath_id, ipv4_src, ipv4_dst, in_port)
 
         # ipv4 addresses
         src_id = reg.search(ipv4_src).group(1)
@@ -203,7 +221,8 @@ class BQoEPathApi(app_manager.RyuApp):
         else:
             self.logger.info("Destination unreacheable")
 
-    def switch_from_host(self, path):
+    @staticmethod
+    def switch_from_host(path):
         ran_lower_bound = 1
         ran_upper_bound = 20
         metro_lower_bound = 21
@@ -253,21 +272,21 @@ class BQoEPathApi(app_manager.RyuApp):
 
         if path_first == 's':
             switch_index = int(path_rest)
-            if switch_index >= ran_lower_bound and switch_index <= ran_upper_bound:
-                rindex = switch_index - ran_lower_bound + 1
-                return "r" + str(rindex)
-            elif switch_index >= metro_lower_bound and switch_index <= metro_upper_bound:
-                mindex = switch_index - metro_lower_bound + 1
-                return "m" + str(mindex)
-            elif switch_index >= access_lower_bound and switch_index <= access_upper_bound:
-                aindex = switch_index - access_lower_bound + 1
-                return "a" + str(aindex)
-            elif switch_index >= core_lower_bound and switch_index <= core_upper_bound:
-                cindex = switch_index - core_lower_bound + 1
-                return "c" + str(cindex)
-            elif switch_index >= internet_lower_bound and switch_index <= internet_upper_bound:
-                iindex = switch_index - internet_lower_bound + 1
-                return "i" + str(iindex)
+            if ran_lower_bound <= switch_index <= ran_upper_bound:
+                r_index = switch_index - ran_lower_bound + 1
+                return "r{0}".format(str(r_index))
+            elif metro_lower_bound <= switch_index <= metro_upper_bound:
+                m_index = switch_index - metro_lower_bound + 1
+                return "m{0}".format(str(m_index))
+            elif access_lower_bound <= switch_index <= access_upper_bound:
+                a_index = switch_index - access_lower_bound + 1
+                return "a{0}".format(str(a_index))
+            elif core_lower_bound <= switch_index <= core_upper_bound:
+                c_index = switch_index - core_lower_bound + 1
+                return "c{0}".format(str(c_index))
+            elif internet_lower_bound <= switch_index <= internet_upper_bound:
+                i_index = switch_index - internet_lower_bound + 1
+                return "i{0}".format(str(i_index))
             else:
                 return path
         else:
@@ -289,9 +308,9 @@ class BQoEPathApi(app_manager.RyuApp):
         else:
             first = host[0]
             if first == 'u':
-                ipfinal = host.split("u")[1]
-                return "10.0.0." + str(int(ipfinal))  # removing leading zeros
-            elif (first == 'r' or first == 'm' or first == 'a' or first == 'c' or first == 'i' or first == 's'):
+                ip_final = host.split("u")[1]
+                return "10.0.0.{0}".format(str(int(ip_final)))  # removing leading zeros
+            elif first == 'r' or first == 'm' or first == 'a' or first == 'c' or first == 'i' or first == 's':
                 sn = self.switch_from_host(host)
                 restsn = sn[1:]
                 ipfinal = 200 + int(restsn)
@@ -301,7 +320,7 @@ class BQoEPathApi(app_manager.RyuApp):
         paths = [path, path[::-1]]
         for path in paths:
             for i in range(1, len(path) - 1):
-                # instaling rule for the i switch
+                # installing rule for the i switch
                 sn = self.switch_from_host(path[i])
                 dpid = int(sn[1:])
                 _next = self.switch_from_host(path[i + 1])
@@ -319,11 +338,18 @@ class BQoEPathApi(app_manager.RyuApp):
                 self.add_flow(datapath, 1024, match, actions)
         self.current_path = path
 
-    # Descr: Method responsible for deploying the rule chosen for a pair src-dst
-    # Args: srcdst: pair of two hosts separeted by a '-': Ex: 'h1-h2'
-    #       rule_id: id of the possible path between the two hosts
-    def deploy_rule(self, srcdst, rule_id):
-        self.logger.info("<deploy_rule> Path srcdst: %s, rule_id: %s", srcdst, rule_id)
+    def deploy_rule(self, src_dst, rule_id):
+        """
+        Deploy a rule chosen for a pair src-dst
+
+        Parameters
+        ----------
+        src_dst : str
+            pair of two hosts separated by a '-': Ex: 'h1-h2'
+        rule_id : int
+            id of the possible path between the two hosts
+        """
+        self.logger.info("<deploy_rule> Path srcdst: %s, rule_id: %s", src_dst, rule_id)
         self.logger.debug("<deploy_rule> Possible paths: %s", self.possible_paths)
 
         # flushing the rules on switches that belongs to a depoloyed path
@@ -341,9 +367,9 @@ class BQoEPathApi(app_manager.RyuApp):
 
         # Check to see if the src-dst pair has paths listed and if true deploy
         # the chosen path
-        if self.possible_paths.has_key(srcdst):
-            if self.possible_paths[srcdst].has_key(int(rule_id)):
-                path = self.possible_paths[srcdst][int(rule_id)]
+        if self.possible_paths.has_key(src_dst):
+            if self.possible_paths[src_dst].has_key(int(rule_id)):
+                path = self.possible_paths[src_dst][int(rule_id)]
                 print(path)
                 # [1, 2, 3, 4, 5, 6]
                 paths = [path, path[::-1]]
@@ -373,33 +399,57 @@ class BQoEPathApi(app_manager.RyuApp):
     def get_graph(self):
         return self.graph
 
-    # Descr: Function that parses the topology.txt file and creates a graph from it
-    # Args: None
     def parse_graph(self):
+        """
+        Parses the topology.txt file and creates a graph from it
+
+        """
+
         file = open('topology.txt', 'r')
         reg = re.compile('-eth([0-9]+):([\w]+)-eth[0-9]+')
-        regSwitch = re.compile('(s[0-9]+) lo')
+        reg_switch = re.compile('(s[0-9]+) lo')
 
         for line in file:
-            if "lo:" not in line:
-                continue
-            refnode = (regSwitch.match(line)).group(1)
-            connections = line[8:]
-            self.edges_ports.setdefault(refnode, {})
-            for conn in reg.findall(connections):
-                self.edges_ports[refnode][conn[1]] = int(conn[0])
-                self.elist.append((refnode, conn[1])) if (conn[1], refnode) not in self.elist else None
+            if "lo:" in line:
+                reference_node = (reg_switch.match(line)).group(1)
+                connections = line[8:]
+                self.edges_ports.setdefault(reference_node, {})
+                for conn in reg.findall(connections):
+                    self.edges_ports[reference_node][conn[1]] = int(conn[0])
+                    self.elist.append((reference_node, conn[1])) if (
+                                                                    conn[1], reference_node) not in self.elist else None
 
-    # Descr: Function that create and sends arp message
-    # Args: datapath: datapath of the switch,
-    #       arp_opcode: ARP_TYPE
-    #       src_mac, dst_mac: ethernet addresses
-    #       src_ip, dst_ip: ipv4 addresses      
-    #       arp_target_mac: ethernet addr to be the answer in arp reply
-    #       in_port: port were entered the packet, output: out_port to send the packet
-    # This function is not used in this version of BQoEP since using autoStaticArp=True in topo config  
-    def send_arp(self, datapath, arp_opcode, src_mac, dst_mac,
-                 src_ip, dst_ip, arp_target_mac, in_port, output):
+    @staticmethod
+    def send_arp(datapath, arp_opcode, src_mac, dst_mac,
+                 src_ip, dst_ip, arp_target_mac, in_port, output_port):
+        """
+        Create and sends arp message
+        # This function is not used in this version of BQoEP since using autoStaticArp=True in topo config
+
+        Parameters
+        ----------
+        datapath
+            datapath of the switch
+
+        arp_opcode
+            ARP_TYPE
+
+        src_mac
+            source mac address
+        dst_mac
+            destine mac address
+        src_ip
+            source ipv4 address
+        dst_ip
+            destine ipv4 address
+        arp_target_mac
+            ethernet address to be the answer in arp reply
+        in_port
+            port were entered the packet
+        output_port
+            out_port to send the packet
+        """
+
         # Generate ARP packet
         ether_proto = ether.ETH_TYPE_ARP
         hwtype = 1
@@ -415,14 +465,17 @@ class BQoEPathApi(app_manager.RyuApp):
         pkt.add_protocol(a)
         pkt.serialize()
 
-        actions = [datapath.ofproto_parser.OFPActionOutput(output)]
+        actions = [datapath.ofproto_parser.OFPActionOutput(output_port)]
 
         datapath.send_packet_out(in_port=in_port, actions=actions, data=pkt.data)
 
-    # Class responsible for the definitions and exposure of webservices
-
 
 class BQoEPathController(ControllerBase):
+    """
+    Class responsible for the definitions and exposure of webservices
+
+    """
+
     def __init__(self, req, link, data, **config):
         super(BQoEPathController, self).__init__(req, link, data, **config)
         self.bqoe_path_spp = data[bqoe_path_api_instance_name]
