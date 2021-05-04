@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+import logging
 from functools import partial
 from subprocess import Popen
 
@@ -27,7 +27,7 @@ def simple_create_host(net, hostname, host_ip, host_mac):
 
 def add_rule(switch_name, required_ip, port_out):
     route_param = 'priority=1024,ip,nw_dst=' + required_ip + ',actions=output:' + port_out
-    print(route_param)
+    logging.debug(route_param)
     p = Popen(['ovs-ofctl', 'add-flow', switch_name, route_param, '-O OpenFlow13'])
     p.wait()
 
@@ -692,5 +692,18 @@ def evaluate_topology():
 
 
 if __name__ == '__main__':
-    setLogLevel('info')
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Create a Mininet Topology')
+    parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
+    parser.add_argument("-q", "--quiet", action="store_true")
+    args = parser.parse_args()
+
+    if args.verbose:
+        setLogLevel('debug')
+    elif args.quiet:
+        setLogLevel('warning')
+    else:
+        setLogLevel('info')
+
     evaluate_topology()
