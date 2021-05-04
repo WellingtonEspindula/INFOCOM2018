@@ -3,6 +3,7 @@ import logging
 from functools import partial
 from subprocess import Popen
 
+from mininet.cli import CLI
 from mininet.link import TCLink
 from mininet.log import setLogLevel
 from mininet.net import Mininet
@@ -687,7 +688,7 @@ def evaluate_topology():
     deploy_flow_rules()
     # while True:
     #     time.sleep(60)
-    # CLI( net )
+    CLI( net )
     logging.info("Running...")
     net.stop()
 

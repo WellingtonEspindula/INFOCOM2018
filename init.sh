@@ -5,7 +5,7 @@ sudo mn -c
 clear
 echo "[INFO] Initializing controller..."
 sudo ryu-manager Controller_DBR.py &
-sleep 3s
+sleep 5s
 clear
 echo "[INFO] Initializing Topology..."
 sudo python3 Topo_DBR.py
