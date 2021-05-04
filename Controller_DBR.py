@@ -233,7 +233,7 @@ class BQoEPathApi(app_manager.RyuApp):
 
         if path_first == 'r':
             switch_index = int(path_rest) + ran_lower_bound - 1
-        elif path_first == 'm':
+        elif path_first == 'm' and path[1] != 'a':
             switch_index = int(path_rest) + metro_lower_bound - 1
         elif path_first == 'a':
             switch_index = int(path_rest) + access_lower_bound - 1
@@ -369,7 +369,7 @@ class BQoEPathApi(app_manager.RyuApp):
                 print(paths)
                 for path in paths:
                     for i in range(1, len(path) - 1):
-                        # instaling rule for the i switch
+                        # installing rule for the i switch
                         dpid = int(path[i][1:])
                         _next = path[i + 1]
                         datapath = self.dp_dict[dpid]
@@ -410,7 +410,8 @@ class BQoEPathApi(app_manager.RyuApp):
                 for conn in reg.findall(connections):
                     self.edges_ports[reference_node][conn[1]] = int(conn[0])
                     self.elist.append((reference_node, conn[1])) if (
-                                                                    conn[1], reference_node) not in self.elist else None
+                                                                        conn[1],
+                                                                        reference_node) not in self.elist else None
 
     @staticmethod
     def send_arp(datapath, arp_opcode, src_mac, dst_mac,
@@ -485,7 +486,7 @@ class BQoEPathController(ControllerBase):
             if ((p1 == "a2" and p2 == "a3") or (p1 == "c2" and p2 == "c1") or (p1 == "m5" and p2 == "m1") or (
                     p1 == "a1" and p2 == "a4") or (p1 == "m3" and p2 == "m2")):
                 d['weight'] = 1000
-            elif (p1 == "m5" and p2 == "m4"):
+            elif p1 == "m5" and p2 == "m4":
                 d['weight'] = 3
             else:
                 d['weight'] = 1
@@ -499,10 +500,13 @@ class BQoEPathController(ControllerBase):
                 prev, dist = nx.algorithms.shortest_paths.bellman_ford_predecessor_and_distance(graph, source=src,
                                                                                                 weight='weight')
                 sp = [dest]
+                # print(f"dest={dest}, sp={sp}, prev={prev}")
                 pv = prev[dest][0]
+                # print(f"dest = {dest}, prev[dest] = {prev[dest]}")
                 while pv != src:
                     sp.append(pv)
                     pv = prev[pv][0]
+                    # print(f"dest = {dest}, prev[dest] = {prev[dest]}")
                 sp.append(src)
 
                 splen = dist[dest]
