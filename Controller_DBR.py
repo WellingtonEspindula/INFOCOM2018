@@ -212,7 +212,7 @@ class BQoEPathApi(app_manager.RyuApp):
                                           in_port=in_port, actions=actions, data=data)
                 datapath.send_msg(out)
         else:
-            self.logger.info("Destination unreacheable")
+            self.logger.info("Destination unreachable")
 
     @staticmethod
     def switch_from_host(path):
@@ -323,8 +323,10 @@ class BQoEPathApi(app_manager.RyuApp):
 
                 out_port = self.edges_ports["s%s" % dpid][_next]
                 actions = [parser.OFPActionOutput(out_port)]
-                self.logger.info("installing rule from %s to %s %s %s", path[i], path[i + 1], str(path[0][1:]),
-                                 str(path[-1][1:]))
+                # self.logger.info("installing rule from %s to %s %s %s", path[i], path[i + 1], str(path[0][1:]),
+                #                  str(path[-1][1:]))
+                self.logger.info("installing rule from %s to %s %s %s", path[i], path[i + 1], str(path[0]),
+                                 str(path[-1]))
                 ip_src = self.ip_from_host(str(path[0]))  # to get the id
                 ip_dst = self.ip_from_host(str(path[-1]))
                 match = parser.OFPMatch(eth_type=0x0800, ipv4_src=ip_src, ipv4_dst=ip_dst)
