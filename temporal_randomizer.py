@@ -37,8 +37,8 @@ def write_data_csv(filename, data):
         # print("File saved")
 
 
-# time_to_run=( (60*(random() % 10)) + (30 + (random() % 29)) )
-time_to_run = (3 + (random() % 29))
+time_to_run = ((60 * (random() % 10)) + (30 + (random() % 29)))
+# time_to_run = (3 + (random() % 29))
 print(f"{time_to_run}s")
 time.sleep(time_to_run)
 
