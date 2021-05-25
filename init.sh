@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+sudo echo ""
 echo "[INFO] Cleaning Running Managers..."
 sudo killall /usr/netmetric/sbin/metricmanager
 echo "[INFO] Cleaning previous mininet config..."
