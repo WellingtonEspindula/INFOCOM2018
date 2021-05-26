@@ -15,5 +15,5 @@ for i in {001..201}; do
   destination=$(echo "$output" | jq -r ".dst")
 #  destination_ip=$(echo "$output" | jq -r ".dest_ip")
 
-  ./temporal_randomizer.py -f 5 "$hostname" "$destination"
+  $m "$hostname" ./temporal_randomizer.py -f 5 "$hostname" "$destination" &
 done
