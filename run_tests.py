@@ -8,13 +8,17 @@ import uuid
 import xml.etree.ElementTree as et
 from datetime import datetime
 from argparse import ArgumentParser
-import random as rand
 
 
-def random():
-    # return int.from_bytes(os.urandom(16), byteorder="big")
-    return rand.random()
+# def random():
+#     return int.from_bytes(os.urandom(16), byteorder="big")
 
+
+# def open_config_csv(filename):
+#     with open(filename, mode='r') as file:
+#         file_reader = csv.reader(file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        # file_reader.(data)
+        # print("File saved")
 
 def read_xml(filename):
     root = et.parse(filename).getroot()
@@ -45,19 +49,16 @@ if __name__ == '__main__':
     parser.add_argument("manager", type=str, help="Manager hostname")
     args = parser.parse_args()
 
-    # Init with constant seed
-    rand.seed(50)
-
     # Read parameters from input
     period = args.period * 60
     hostname = args.hostname
     manager = args.manager
 
     # Time to run depends on it's running or fast first trigger mode
-    if args.fast:
-        first_trigger_time = (3 + (random() % 29))
-    else:
-        first_trigger_time = ((60 * (random() % 10)) + (30 + (random() % 29)))
+    # if args.fast:
+    #     first_trigger_time = (3 + (random() % 29))
+    # else:
+    #     first_trigger_time = ((60 * (random() % 10)) + (30 + (random() % 29)))
 
     print(f"Running in {first_trigger_time} s")
     time.sleep(first_trigger_time)
