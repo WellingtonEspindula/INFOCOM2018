@@ -67,7 +67,8 @@ if __name__ == '__main__':
         # Regenerate UUID from schedule
         sch_uuid = str(uuid.uuid4())
         # Creates the metric agent command
-        command = f"/usr/netmetric/sbin/metricagent -c -f schedules/agenda-{manager}.xml -w -l 1000 -u 100 -u {sch_uuid}"
+        command = f"/usr/netmetric/sbin/metricagent -c -f " \
+                  f"schedules/agenda-{manager}.xml -w -l 1000 -u 100 -u {sch_uuid}"
         os.system(command)
 
         # Gather the data from metricagent xml output

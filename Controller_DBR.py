@@ -102,7 +102,8 @@ class BQoEPathApi(app_manager.RyuApp):
         actions = []
         self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, match, actions)
 
-    def add_flow(self, datapath, priority, match, actions):
+    @staticmethod
+    def add_flow(datapath, priority, match, actions):
         """
         Installs flow entry on switch
 
@@ -215,7 +216,7 @@ class BQoEPathApi(app_manager.RyuApp):
             self.logger.info("Destination unreachable")
 
     @staticmethod
-    def switch_from_host(path):
+    def switch_from_hostname(path):
         ran_lower_bound = 1
         ran_upper_bound = 20
         metro_lower_bound = 21
@@ -247,7 +248,7 @@ class BQoEPathApi(app_manager.RyuApp):
         else:
             return path
 
-    def host_from_switch(self, path):
+    def hostname_from_switch(self, path):
         ran_lower_bound = 1
         ran_upper_bound = 20
         metro_lower_bound = 21
@@ -285,7 +286,7 @@ class BQoEPathApi(app_manager.RyuApp):
         else:
             return path
 
-    def ip_from_host(self, host):
+    def ip_from_hostname(self, host):
         if host == "src1":
             return "10.0.0.249"
         elif host == "src2":
@@ -304,7 +305,7 @@ class BQoEPathApi(app_manager.RyuApp):
                 ip_final = host.split("u")[1]
                 return "10.0.0.{0}".format(str(int(ip_final)))  # removing leading zeros
             elif first == 'r' or first == 'm' or first == 'a' or first == 'c' or first == 'i' or first == 's':
-                sn = self.switch_from_host(host)
+                sn = self.switch_from_hostname(host)
                 restsn = sn[1:]
                 ipfinal = 200 + int(restsn)
                 return "10.0.0." + str(ipfinal)
@@ -314,26 +315,24 @@ class BQoEPathApi(app_manager.RyuApp):
         for path in paths:
             for i in range(1, len(path) - 1):
                 # installing rule for the i switch
-                sn = self.switch_from_host(path[i])
+                sn = self.switch_from_hostname(path[i])
                 dpid = int(sn[1:])
-                _next = self.switch_from_host(path[i + 1])
+                _next = self.switch_from_hostname(path[i + 1])
                 datapath = self.dp_dict[dpid]
                 parser = datapath.ofproto_parser
                 ofproto = datapath.ofproto
 
                 out_port = self.edges_ports["s%s" % dpid][_next]
                 actions = [parser.OFPActionOutput(out_port)]
-                # self.logger.info("installing rule from %s to %s %s %s", path[i], path[i + 1], str(path[0][1:]),
-                #                  str(path[-1][1:]))
                 self.logger.info("installing rule from %s to %s %s %s", path[i], path[i + 1], str(path[0]),
                                  str(path[-1]))
-                ip_src = self.ip_from_host(str(path[0]))  # to get the id
-                ip_dst = self.ip_from_host(str(path[-1]))
+                ip_src = self.ip_from_hostname(str(path[0]))  # to get the id
+                ip_dst = self.ip_from_hostname(str(path[-1]))
                 match = parser.OFPMatch(eth_type=0x0800, ipv4_src=ip_src, ipv4_dst=ip_dst)
                 self.add_flow(datapath, 1024, match, actions)
         self.current_path = path
 
-    def deploy_rule(self, src_dst, rule_id):
+    def deploy_rule(self, src_dst: str, rule_id: int):
         """
         Deploy a rule chosen for a pair src-dst
 
@@ -347,7 +346,7 @@ class BQoEPathApi(app_manager.RyuApp):
         self.logger.info("<deploy_rule> Path srcdst: %s, rule_id: %s", src_dst, rule_id)
         self.logger.debug("<deploy_rule> Possible paths: %s", self.possible_paths)
 
-        # flushing the rules on switches that belongs to a depoloyed path
+        # flushing the rules on switches that belongs to a deployed path
         if self.current_path:
             switches_to_clear = [elem for elem in self.current_path if 'h' not in elem]
             for switch in switches_to_clear:
@@ -483,8 +482,8 @@ class BQoEPathController(ControllerBase):
 
         graph = self.bqoe_path_spp.get_graph()
         for u, v, d in graph.edges(data=True):
-            p1 = self.bqoe_path_spp.host_from_switch(u)
-            p2 = self.bqoe_path_spp.host_from_switch(v)
+            p1 = self.bqoe_path_spp.hostname_from_switch(u)
+            p2 = self.bqoe_path_spp.hostname_from_switch(v)
             if ((p1 == "a2" and p2 == "a3") or (p1 == "c2" and p2 == "c1") or (p1 == "m5" and p2 == "m1") or (
                     p1 == "a1" and p2 == "a4") or (p1 == "m3" and p2 == "m2")):
                 d['weight'] = 1000
@@ -518,9 +517,9 @@ class BQoEPathController(ControllerBase):
 
         humanmin_sp = []
         for elem in min_sp:
-            humanmin_sp.append(self.bqoe_path_spp.host_from_switch(elem))
+            humanmin_sp.append(self.bqoe_path_spp.hostname_from_switch(elem))
 
-        result = dict(dst=humanmin_sp[0], dest_ip=self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), path=humanmin_sp)
+        result = dict(dst=humanmin_sp[0], dest_ip=self.bqoe_path_spp.ip_from_hostname(humanmin_sp[0]), path=humanmin_sp)
         self.bqoe_path_spp.deploy_any_path(humanmin_sp)
 
         body = json.dumps(result, indent=4)
