@@ -1730,14 +1730,14 @@ class BQoEPathController(ControllerBase):
         dict_path = self.bqoe_path_spp.all_paths_sd(src, dst)
         print("DPS: " + str(len(dict_path)))
         body = json.dumps(dict_path, indent=4)
-        return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+        return Response(content_type='application/json', body=body, charset="UTF-8")
 
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'widestpath-[a-z0-9\-]*'})
     def widest_path(self, req, **kwargs):
         if not self.bqoe_path_spp.nodes:
             result = dict(mos=-1, tp=-1, dst="", dest_ip="", path="NO_SNAPSHOT")
             body = json.dumps(result, indent=2)
-            return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+            return Response(content_type='application/json', body=body, charset="UTF-8")
 
         src = kwargs['method'][11:].split('-')[0]
         dst = kwargs['method'][11:].split('-')[1]
@@ -1862,14 +1862,14 @@ class BQoEPathController(ControllerBase):
         self.bqoe_path_spp.mydict[src][humanpath[0]] = auxmap
 
         body = json.dumps(result, indent=4)
-        return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+        return Response(content_type='application/json', body=body, charset="UTF-8")
 
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'shortestpath-[a-z0-9\-]*'})
     def shortest_path(self, req, **kwargs):
         if not self.bqoe_path_spp.nodes:
             result = dict(mos=-1, tp=-1, dst="", dest_ip="", path="NO_SNAPSHOT")
             body = json.dumps(result, indent=2)
-            return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+            return Response(content_type='application/json', body=body, charset="UTF-8")
 
         src = kwargs['method'][13:].split('-')[0]
         dst = kwargs['method'][13:].split('-')[1]
@@ -1943,14 +1943,14 @@ class BQoEPathController(ControllerBase):
         self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
 
         body = json.dumps(result, indent=4)
-        return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+        return Response(content_type='application/json', body=body, charset="UTF-8")
 
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'admweights-[a-z0-9\-]*'})
     def adm_weights(self, req, **kwargs):
         if not self.bqoe_path_spp.nodes:
             result = dict(mos=-1, tp=-1, dst="", dest_ip="", path="NO_SNAPSHOT")
             body = json.dumps(result, indent=2)
-            return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+            return Response(content_type='application/json', body=body, charset="UTF-8")
 
         src = kwargs['method'][11:].split('-')[0]
         dst = kwargs['method'][11:].split('-')[1]
@@ -2045,14 +2045,14 @@ class BQoEPathController(ControllerBase):
         self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
 
         body = json.dumps(result, indent=4)
-        return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+        return Response(content_type='application/json', body=body, charset="UTF-8")
 
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'bwbellmanford-[a-z0-9\-]*'})
     def bw_bellman_ford(self, req, **kwargs):
         if not self.bqoe_path_spp.nodes:
             result = dict(mos=-1, tp=-1, dst="", dest_ip="", path="NO_SNAPSHOT")
             body = json.dumps(result, indent=2)
-            return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+            return Response(content_type='application/json', body=body, charset="UTF-8")
 
         src = kwargs['method'][14:].split('-')[0]
         dst = kwargs['method'][14:].split('-')[1]
@@ -2133,7 +2133,7 @@ class BQoEPathController(ControllerBase):
         self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
 
         body = json.dumps(result, indent=4)
-        return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+        return Response(content_type='application/json', body=body, charset="UTF-8")
 
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'bestqoepath-[a-z0-9\-]*'})
     def bestqoe_path(self, req, **kwargs):
@@ -2147,7 +2147,7 @@ class BQoEPathController(ControllerBase):
         # self.bqoe_path_spp.deploy_any_path(bestqoepath)
         # body = json.dumps(qoeresult, indent=3)
         body = "OK"
-        return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+        return Response(content_type='application/json', body=body, charset="UTF-8")
 
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'deploybestqoepath-[a-z0-9\-]*'})
     def deploy_bestqoe_path(self, req, **kwargs):
@@ -2159,7 +2159,7 @@ class BQoEPathController(ControllerBase):
         best_qoe_path = qoe_result["path"]
         # self.bqoe_path_spp.deploy_any_path(bestqoepath)
         body = json.dumps(qoe_result, indent=3)
-        return bellman_fordResponse(content_type='application/json', body=body, charset="UTF-8")
+        return Response(content_type='application/json', body=body, charset="UTF-8")
 
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'deploy-h[0-9]+-h[0-9]+-[0-9]+'})
     def deploy_path(self, req, **kwargs):
