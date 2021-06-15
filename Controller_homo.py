@@ -6,25 +6,24 @@
 #    Roberto Costa Filho - 237091 - rtcosta@gmail.com
 # Esqueleto do codigo baseado no codigo simple_switch_13.py - Ryu Controller
 
-from ryu.base import app_manager
-from ryu.controller import (ofp_event, dpset)
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, DEAD_DISPATCHER
-from ryu.controller.handler import set_ev_cls
-from ryu.ofproto import ofproto_v1_3, ether
-from ryu.lib.packet import packet
-from ryu.lib.packet import ethernet, ipv4, arp
-from shutil import copyfile
-from sets import Set
-import Queue as Q
+import json
+import math
+import os
 import pickle
-import sys, os, commands, time, random, math, pickle
-import networkx as nx
-import itertools
 import random
 import re
-import json
-import csv
+from shutil import copyfile
+
+import Queue as Q
+import networkx as nx
 from ryu.app.wsgi import ControllerBase, WSGIApplication, route
+from ryu.base import app_manager
+from ryu.controller import (ofp_event, dpset)
+from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
+from ryu.controller.handler import set_ev_cls
+from ryu.lib.packet import ethernet, ipv4, arp
+from ryu.lib.packet import packet
+from ryu.ofproto import ofproto_v1_3, ether
 from webob import Response
 
 ARP = arp.arp.__name__
@@ -490,9 +489,9 @@ class BQoEPathApi(app_manager.RyuApp):
                 self.bw[index1][index2] = brute_bw / ATENUATION_RATE #up
                 cc.write(self.nodes[index1] + ";" + self.nodes[index2] + ";" + str(int(self.bw[index1][index2] / 2000000.0)) + "\n") 
 
-            else: 
-    	        print "error -- something went wrong..."
-    
+            else:
+                print("error -- something went wrong...")
+
         #print str(aux[0]) + " " + str(aux[1] + " " + str(bw[index1][index2]))
     
         fin.close()
@@ -549,7 +548,7 @@ class BQoEPathApi(app_manager.RyuApp):
 
         #bdfile = open('/tmp/best_destinations.csv', 'wb')
         self.readNmCsv()
-        print "[RYU] ------------------- SNAPSHOT UPDATED ---------------------"
+        print("[RYU] ------------------- SNAPSHOT UPDATED ---------------------")
         if os.path.exists('/tmp/current_mos.csv'):
             os.remove('/tmp/current_mos.csv')
 
@@ -640,7 +639,7 @@ class BQoEPathApi(app_manager.RyuApp):
         return round(mos, 2)
 
     def localBestQoePath(self, src, dst):
-        _auxSet = Set()
+        _auxSet = set()
 
         _csvFile = "nm_last_results.csv"
 
@@ -689,9 +688,9 @@ class BQoEPathApi(app_manager.RyuApp):
                 _loss[_index1][_index2] = float(_aux[3]) #up
                 _bw[_index1][_index2] = float(_aux[4]) #up
 
-            else: 
-    	        print "error -- something went wrong..."
-    
+            else:
+                print("error -- something went wrong...")
+
         #print str(aux[0]) + " " + str(aux[1] + " " + str(bw[index1][index2]))
     
         _fin.close()
@@ -733,7 +732,7 @@ class BQoEPathApi(app_manager.RyuApp):
                 #print "-----------"
                 for _i in range(0, _numNodes):
                     if (_links[_i][_u] == 1):
-                        print ">>> Test " + _nodes[_i]
+                        print(">>> Test " + _nodes[_i])
                         _bwNode[0]
                         #calculate qos metrics
                         _bwAux   = _bwNode[_u] if (_bwNode[_u] < _bw[_i][_u]) else _bw[_i][_u]
@@ -1091,7 +1090,7 @@ class BQoEPathApi(app_manager.RyuApp):
         self.logger.info("<all_paths_sd> Path src: %s, dst: %s", src, dst)
         paths = list(nx.all_simple_paths(self.graph, src, dst, PATH_SIZE))
         dict_path = {}
-        for i, path in zip(xrange(0,len(paths)), paths):
+        for i, path in zip(range(0,len(paths)), paths):
             dict_path[i] = path
 
         self.possible_paths["%s-%s"%(src,dst)] = dict_path
@@ -1198,7 +1197,7 @@ class BQoEPathApi(app_manager.RyuApp):
     def deploy_any_path(self, path):
         paths = [path,  path[::-1]]
         for path in paths:
-            for i in xrange(1, len(path) - 1):
+            for i in range(1, len(path) - 1):
                 #instaling rule for the i switch
                 sn = self.switch_from_host(path[i])
                 dpid = int(sn[1:])
@@ -1250,7 +1249,7 @@ class BQoEPathApi(app_manager.RyuApp):
                 paths = [path,  path[::-1]]
                 print(paths)
                 for path in paths:
-                    for i in xrange(1, len(path) - 1):
+                    for i in range(1, len(path) - 1):
                         #instaling rule for the i switch
                         dpid = int(path[i][1:])
                         _next = path[i+1]
@@ -1375,12 +1374,12 @@ class BQoEPathController(ControllerBase):
             for dest in destinations_array:
                 sp = nx.shortest_path(graph,source=src,target=dest,weight='rtt')
                 splen = nx.shortest_path_length(graph,source=src,target=dest,weight='rtt')
-                print "DEST: " + dest + " LEN: " + str(splen) + " PATH " + str(sp) + " MIN: " + str(min_splen)
+                print("DEST: " + dest + " LEN: " + str(splen) + " PATH " + str(sp) + " MIN: " + str(min_splen))
                 if splen < min_splen:
                     min_sp = sp
                     min_splen = splen
         else:
-            min_sp = nx.shortest_path(graph,source=src,target=dest,weight='rtt')
+            min_sp = nx.shortest_path(graph,source=src,target=dst,weight='rtt')
 
         humanmin_sp = []
         for elem in min_sp:
@@ -1459,8 +1458,8 @@ class BQoEPathController(ControllerBase):
             destinations_array = ["cdn1", "cdn2", "cdn3", "ext1"]
             random.shuffle(destinations_array)
             for dest in destinations_array:
-                print dest
-                prev, dist = nx.bellman_ford(graph,source=src,weight='rtt')
+                print(dest)
+                prev, dist = nx.algorithms.shortest_paths.bellman_ford_predecessor_and_distance(graph,source=src,weight='rtt')
                 #print str(prev)
                 #print "---------------"
                 #print str(dist)
@@ -1472,13 +1471,13 @@ class BQoEPathController(ControllerBase):
                     pv = prev[pv]
                 sp.append(src)
 
-                splen = dist[dest] 
-                print "DEST: " + dest + " LEN: " + str(splen) + " PATH " + str(sp) + " MIN: " + str(min_splen)
+                splen = dist[dest]
+                print("DEST: " + dest + " LEN: " + str(splen) + " PATH " + str(sp) + " MIN: " + str(min_splen))
                 if splen < min_splen:
                     min_sp = sp
                     min_splen = splen
         else:
-            min_sp = nx.shortest_path(graph,source=src,target=dest,weight='rtt')
+            min_sp = nx.shortest_path(graph,source=src,target=dst,weight='rtt')
 
         humanmin_sp = []
         for elem in min_sp:
@@ -1569,7 +1568,7 @@ class BQoEPathController(ControllerBase):
                     min_sp = sp
                     min_splen = splen
         else:
-            min_sp = nx.shortest_path(graph,source=src,target=dest,weight='rtt')
+            min_sp = nx.shortest_path(graph,source=src,target=dst,weight='rtt')
 
         humanmin_sp = []
         for elem in min_sp:
@@ -1586,7 +1585,7 @@ class BQoEPathController(ControllerBase):
             #if self.bqoe_path_spp.bw[index1][index2] < 0:
             #    self.bqoe_path_spp.bw[index1][index2] = 0.0
 
-        print humanmin_sp[0] + " " + str(humanmin_sp) + " " + str(min_splen)
+        print(humanmin_sp[0] + " " + str(humanmin_sp) + " " + str(min_splen))
         result = dict(mos = final_mos, tp = final_tp, dst = humanmin_sp[0], dest_ip=self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), path = humanmin_sp)
         self.bqoe_path_spp.deploy_any_path(humanmin_sp)
 
@@ -1625,7 +1624,7 @@ class BQoEPathController(ControllerBase):
     def deploy_bestqoe_path(self, req, **kwargs):
         src = kwargs['method'][18:].split('-')[0]
         dst = kwargs['method'][18:].split('-')[1]
-        print "[RYU] SRC: " + src + " DST: " + dst
+        print("[RYU] SRC: " + src + " DST: " + dst)
         # print(self.graph.edges(data=True))
         qoeresult = self.bqoe_path_spp.bestQoePath(src, dst)
         bestqoepath = qoeresult["path"]
