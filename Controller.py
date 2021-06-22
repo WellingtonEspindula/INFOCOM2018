@@ -1737,7 +1737,7 @@ class BQoEPathController(ControllerBase):
         graph = self.bqoe_path_spp.get_graph()
         local_edges = ""
         for u, v, d in graph.edges(data=True):
-            local_edges += f'{u} {v}\n'
+            local_edges += f'{v} {u}\n'
         body = local_edges
         return Response(content_type='text/plain', body=body, charset="UTF-8")
 
