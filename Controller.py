@@ -1732,6 +1732,18 @@ class BQoEPathController(ControllerBase):
         body = json.dumps(dict_path, indent=4)
         return Response(content_type='application/json', body=body, charset="UTF-8")
 
+    @route('bqoepath', url, methods=['GET'], requirements={'method': r'getalledges'})
+    def get_all_edges(self, req, **kwargs):
+        graph = self.bqoe_path_spp.get_graph()
+        local_edges = ""
+        for u, v, d in graph.edges(data=True):
+            local_edges += f'{u} {v}\n'
+        body = local_edges
+        return Response(content_type='text/plain', body=body, charset="UTF-8")
+
+
+
+
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'widestpath-[a-z0-9\-]*'})
     def widest_path(self, req, **kwargs):
         if not self.bqoe_path_spp.nodes:
