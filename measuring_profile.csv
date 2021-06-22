@@ -1,0 +1,4 @@
+agent;manager;metric;polling
+u001;r1;throughput_tcp;5
+u001;r1;rtt;0.5
+r1;m1;throughput_tcp;10

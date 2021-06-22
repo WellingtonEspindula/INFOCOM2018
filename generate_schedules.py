@@ -1,11 +1,9 @@
 #!/usr/bin/python3
-import sys
 
 def create_schedule(manager, manager_ip):
     has_tp = True
     has_rtt = True
     has_loss = True
-
 
     tp = "<plugins>throughput_tcp</plugins>" if has_tp else None
     rtt = "<plugins>rtt</plugins>" if has_rtt else None
@@ -77,4 +75,3 @@ create_schedule('c2', '10.0.0.231')
 create_schedule('c3', '10.0.0.232')
 create_schedule('c4', '10.0.0.233')
 create_schedule('i1', '10.0.0.234')
-
