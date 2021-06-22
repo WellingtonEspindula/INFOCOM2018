@@ -133,16 +133,16 @@ def evaluate_topology():
 
     # 1.   DESTINATIONS
     # 1.1. CREATING HOSTS
-    man1 = simple_create_host(net, 'man1', '10.0.0.251', '00:04:00:00:02:51')
-    man2 = simple_create_host(net, 'man2', '10.0.0.252', '00:04:00:00:02:52')
-    man3 = simple_create_host(net, 'man3', '10.0.0.253', '00:04:00:00:02:53')
-    man4 = simple_create_host(net, 'man4', '10.0.0.254', '00:04:00:00:02:54')
+    cdn1 = simple_create_host(net, 'cdn1', '10.0.0.251', '00:04:00:00:02:51')
+    cdn2 = simple_create_host(net, 'cdn2', '10.0.0.252', '00:04:00:00:02:52')
+    cdn3 = simple_create_host(net, 'cdn3', '10.0.0.253', '00:04:00:00:02:53')
+    ext1 = simple_create_host(net, 'ext1', '10.0.0.254', '00:04:00:00:02:54')
 
     # 1.2. CREATING LINKS
-    link_switch_to_host(net, man1, s30, 0, 99, False, link1_gbps_1)
-    link_switch_to_host(net, man2, s31, 0, 99, False, link1_gbps_1)
-    link_switch_to_host(net, man3, s32, 0, 99, False, link1_gbps_1)
-    link_switch_to_host(net, man4, s33, 0, 99, False, link1_gbps_1)
+    link_switch_to_host(net, cdn1, s25, 0, 99, False, link100_mbps_1)
+    link_switch_to_host(net, cdn2, s29, 0, 99, False, link1_gbps_1)
+    link_switch_to_host(net, cdn3, s31, 0, 99, False, link1_gbps_1)
+    link_switch_to_host(net, ext1, s34, 0, 99, False, link1_gbps_30)
 
     # 2.   SWITCH PROCESSING
     # 2.1. CREATING HOSTS
