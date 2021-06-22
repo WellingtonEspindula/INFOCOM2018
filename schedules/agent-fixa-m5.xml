@@ -1,0 +1,27 @@
+<metrics>
+    <ativas>
+        <agt-index>1090</agt-index>
+        <manager-ip>10.0.0.225</manager-ip>
+        <literal-addr>1234</literal-addr>
+        <android>1</android>
+        <location>
+            <name>837fc94b59e7b88a</name>
+            <city>-</city>
+            <state>-</state>
+        </location>
+        <plugins>throughput_tcp</plugins>
+        <plugins>rtt</plugins>
+        <plugins>loss</plugins>
+        <timeout>12</timeout>
+        <probe-size>14520</probe-size>
+        <train-len>1440</train-len>
+        <train-count>1</train-count>
+        <gap-value>100000</gap-value>
+        <protocol>1</protocol>
+        <num-conexoes>3</num-conexoes>
+        <time-mode>2</time-mode>
+        <max-time>12</max-time>
+        <port>12001</port>
+        <output>OUTPUT-SNMP</output>
+    </ativas>
+</metrics>

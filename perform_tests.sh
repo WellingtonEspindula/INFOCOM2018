@@ -402,7 +402,7 @@ function perform_measurement()
     manager=$p2
     managerip=$ip2
 
-    cp -f /home/mininet/manconfs/agent-fixa-$manager.xml /tmp/agent-fixa-$manager-$agent.xml
+    cp -f schedules/agent-fixa-$manager.xml /tmp/agent-fixa-$manager-$agent.xml
     sed -i "s/<literal-addr>.*<\/literal-addr>/<literal-addr>$agent<\/literal-addr>/g" /tmp/agent-fixa-$manager-$agent.xml 
     cd results
     managerip="10.0.0."$manageripfinal
@@ -426,7 +426,7 @@ killall -9 metricmanager
 killall -9 iperf3
 rm -rf results/*
 
-for i in `ls manconfs`
+for i in `ls schedules`
 do
   echo "******"
   echo $i
