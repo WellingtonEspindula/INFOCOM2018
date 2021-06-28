@@ -8,17 +8,10 @@ import uuid
 import xml.etree.ElementTree as et
 from datetime import datetime
 from argparse import ArgumentParser
+import subprocess
+import signal
 
-
-# def random():
-#     return int.from_bytes(os.urandom(16), byteorder="big")
-
-
-# def open_config_csv(filename):
-#     with open(filename, mode='r') as file:
-#         file_reader = csv.reader(file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-# file_reader.(data)
-# print("File saved")
+m="/home/mininet/mininet/util/m"
 
 # def read_results_xml(filename):
 #     root = et.parse(filename).getroot()
@@ -30,12 +23,6 @@ from argparse import ArgumentParser
 #     download_avg = root.find("./ativas/downavg").text
 #     status = root.find("./ativas/status").text
 #     return [upload_min, upload_max, upload_avg, download_min, download_max, download_avg, status]
-
-# def read_config_params(filename):
-#     with open(filename, mode="r") as file:
-#         reader = csv.reader(file, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#         reader.next()
-
 
 def rename_switch(switchname):
     RAN_LOWER_BOUND = 1
@@ -53,29 +40,29 @@ def rename_switch(switchname):
     INTERNET_LOWER_BOUND = 34
     INTERNET_UPPER_BOUND = 34
 
-    sp = switchname[1:]
+    sp = int(switchname[1:])
     if RAN_LOWER_BOUND <= sp <= RAN_UPPER_BOUND:
         newsp = sp - RAN_LOWER_BOUND
         newsp = newsp + 1
-        print(f"r{newsp}")
+        return f"r{newsp}"
     elif METRO_LOWER_BOUND <= sp <= METRO_UPPER_BOUND:
         newsp = sp - METRO_LOWER_BOUND
         newsp = newsp + 1
-        print(f"m{newsp}")
+        return f"m{newsp}"
     elif ACCESS_LOWER_BOUND <= sp <= ACCESS_UPPER_BOUND:
         newsp = sp - ACCESS_LOWER_BOUND
         newsp = newsp + 1
-        print(f"a{newsp}")
+        return f"a{newsp}"
     elif CORE_LOWER_BOUND <= sp <= CORE_UPPER_BOUND:
         newsp = sp - CORE_LOWER_BOUND
         newsp = newsp + 1
-        print(f"c{newsp}")
+        return f"c{newsp}"
     elif INTERNET_LOWER_BOUND <= sp <= INTERNET_UPPER_BOUND:
         newsp = sp - INTERNET_LOWER_BOUND
         newsp = newsp + 1
-        print(f"i{newsp}")
+        return f"i{newsp}"
     else:
-        print(f"{switchname}")
+        return f"{switchname}"
 
 
 def calculate_ip(p):
@@ -102,14 +89,14 @@ def calculate_ip(p):
             return f"10.0.0.{ipfinal}"
 
 
-def create_schedule(agent, manager_ip, metric):
+def create_schedule(sch_uuid, agent, manager_ip, metric):
     has_tp = metric == "throughput_tcp"
     has_rtt = metric == "rtt"
     has_loss = metric == "loss"
 
-    tp = "<plugins>throughput_tcp</plugins>" if has_tp else None
-    rtt = "<plugins>rtt</plugins>" if has_rtt else None
-    loss = "<plugins>loss</plugins>" if has_loss else None
+    tp = "<plugins>throughput_tcp</plugins>\n" if has_tp else "" 
+    rtt = "<plugins>rtt</plugins>\n" if has_rtt else ""
+    loss = "<plugins>loss</plugins>\n" if has_loss else ""
 
     schedule = f"""<metrics>
     <ativas>
@@ -118,13 +105,11 @@ def create_schedule(agent, manager_ip, metric):
         <literal-addr>{agent}</literal-addr>
         <android>1</android>
         <location>
-            <name>837fc94b59e7b88a</name>
+            <name>-</name>
             <city>-</city>
             <state>-</state>
         </location>
-        {tp}
-        {rtt}
-        {loss}
+        {tp}{rtt}{loss}
         <timeout>12</timeout>
         <probe-size>14520</probe-size>
         <train-len>1440</train-len>
@@ -139,25 +124,32 @@ def create_schedule(agent, manager_ip, metric):
     </ativas>
 </metrics>"""
 
-    with open(f'/tmp/schedule-{uuid}.xml', 'w+') as file:
+    with open(f'/tmp/schedule-{sch_uuid}.xml', 'w+') as file:
         file.write(schedule)
 
 
 def read_results_xml(filename):
     root = et.parse(filename).getroot()
 
-    throughput_tcp_upload_avg = root.find("./ativas[@metrica=\"throughput_tcp\"]/upavg").text
-    throughput_tcp_download_avg = root.find("./ativas[@metrica=\"throughput_tcp\"]/downavg").text
+    throughput_tcp_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/upavg")
+    throughput_tcp_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/downavg")
 
-    rtt_upload_avg = root.find("./ativas[@metrica=\"rtt\"]/upavg").text
-    rtt_download_avg = root.find("./ativas[@metrica=\"rtt\"]/downavg").text
+    rtt_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"rtt\"]/upavg")
+    rtt_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"rtt\"]/downavg")
 
-    loss_upload_avg = root.find("./ativas[@metrica=\"loss\"]/upavg").text
-    loss_download_avg = root.find("./ativas[@metrica=\"loss\"]/downavg").text
+    loss_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"loss\"]/upavg")
+    loss_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"loss\"]/downavg")
 
     return [throughput_tcp_upload_avg, throughput_tcp_download_avg, rtt_upload_avg, rtt_download_avg,
             loss_upload_avg, loss_download_avg]
 
+
+def parse_xml_text_if_exists(root, xpath):
+    element = root.find(xpath)
+    if element != None:
+        return element.text
+    else:
+        return ""
 
 def write_data_csv(filename, data):
     with open(filename, mode='a+') as file:
@@ -171,21 +163,24 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='Runs the metricagent using a random trigger time')
     parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
     parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
-    parser.add_argument("hostname", type=str, help="Agent hostname")
+    parser.add_argument("agent", type=str, help="Agent hostname")
     parser.add_argument("manager", type=str, help="Manager hostname")
-    parser.add_argument("metric", type=str, help="Metric that will be measured {throughput_tcp|rtt|loss}")
-    parser.add_argument("period", type=int, help="Trigger period in minutes")
+    parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
+    parser.add_argument("rtt_period", type=float, help="Rtt measurement repeating period (min)")
+    parser.add_argument("loss_period", type=float, help="Loss measurement repeating period (min)")
     args = parser.parse_args()
 
     # Read parameters from input
-    period = args.period * 60
-    hostname = args.hostname
+    tp_period = args.throughput_tcp_period * 60
+    rtt_period = args.rtt_period * 60
+    loss_period = args.loss_period * 60
+    hostname = args.agent
     manager = args.manager
-    metric = args.metric
+    #metric = args.metric
 
-    if metric != "throughput_tcp" and metric != "rtt" and metric != "loss":
-        print("Undefined Metric. Exiting...")
-        exit(1)
+    #if metric != "throughput_tcp" and metric != "rtt" and metric != "loss":
+    #    print("Undefined Metric. Exiting...")
+    #    exit(1)
 
     # Time to run depends on it's running or fast first trigger mode
     # if args.fast:
@@ -203,20 +198,28 @@ if __name__ == '__main__':
 
     # Keep waiting the given period (polling) and calls metricagent
     while True:
-        # Regenerate UUID from schedule
+        # Generate Schedule's UUID
         sch_uuid = str(uuid.uuid4())
-        print(f"This measure is identified by uuid={uuid}")
+        print(f"This measure is identified by uuid={sch_uuid}")
 
-        print(calculate_ip(manager))
-        create_schedule(hostname, calculate_ip(manager), metric)
+        print(f"Manager IP={calculate_ip(manager)}")
+        create_schedule(sch_uuid, hostname, calculate_ip(manager), metric)
 
+        renamed_manager = rename_switch(manager)
         # Starts metric manager first
-        command = f"$m {manager} /usr/netmetric/sbin/metricmanager -c &"
-        os.system(command)
+        command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
+        # Run Netmetric Manager using subprocess
+        manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
+        time.sleep(20)
+        #print(command)
 
         # Creates the metric agent command
-        command = f"/usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{uuid}.xml -w -l 1000 -u 100 -u {sch_uuid}"
+        command = f"{m} {hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u 100 -u {sch_uuid}"
         os.system(command)
+        #print(command)
+
+        # Kill Netmetric Manager process
+        os.killpg(manager_process.pid, signal.SIGTERM)
 
         # Gather the data from metricagent xml output
         current_timestamp = str(datetime.now())

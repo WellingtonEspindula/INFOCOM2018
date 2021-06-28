@@ -4,6 +4,8 @@
 host="localhost"
 port=8080
 
+sudo echo ""
+
 while read -r line
 do
   # Creates hostname from iteration (u001-u201) and create the url to build the path
@@ -23,5 +25,7 @@ do
   metric=$(echo "$line" | cut -d ';' -f 3) # Third one
   polling_time=$(echo "$line" | cut -d ';' -f 4) # ...
 
-  $m "$hostname" ./new_run.py "$hostname" "$manager" "$metric" "$polling_time" &
-done < measuring_profile.csv
+  #$m "$hostname" ./run_test.py "$hostname" "$manager" "$metric" "$polling_time" &
+  sudo ./run_test.py "$hostname" "$manager" "$metric" "$polling_time" &
+  #echo "sudo ./run_test.py $hostname $manager $metric $polling_time &"
+done < <(tail -n +2 measuring_profile.csv)

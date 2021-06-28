@@ -1,0 +1,4 @@
+ryu==4.30
+networkx>=2.5.1
+eventlet==0.30.2
+mininet

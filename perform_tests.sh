@@ -408,7 +408,7 @@ function perform_measurement()
     managerip="10.0.0."$manageripfinal
     #echo $managerip
     cpuroundrobin=`expr $cpuroundrobin % $CPU_LIMIT`
-    taskset -c 4-19 /home/mininet/mininet/util/m $agent metricagent -c -f /tmp/agent-fixa-$manager-$agent.xml -w -l 1000 -u 100 -u $manager-$agent -i 0 &
+    taskset -c 1-4 /home/mininet/mininet/util/m $agent /usr/netmetric/sbin/metricagent -c -f /tmp/agent-fixa-$manager-$agent.xml -w -l 1000 -u 100 -u $manager-$agent -i 0 &
     cpuroundrobin=`expr $cpuroundrobin + 1`
 #    /home/mininet/mininet/util/m $agent iperf3 -c $managerip 2&> iperf-$manager-$agent -n 5048000
     cd -
@@ -439,7 +439,7 @@ do
     sleep 0.5
   done
   cpuroundrobin=`expr $cpuroundrobin % $CPU_LIMIT`
-  taskset -c 4-19 /home/mininet/mininet/util/m $manager metricmanager -c &
+  taskset -c 1-4 /home/mininet/mininet/util/m $manager /usr/netmetric/sbin/metricmanager -c &
   cpuroundrobin=`expr $cpuroundrobin + 1`
 #  /home/mininet/mininet/util/m $manager iperf3 -s &
 done
