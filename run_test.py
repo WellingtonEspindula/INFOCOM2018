@@ -171,14 +171,11 @@ def measurement_service(metric, period):
         print(f"Manager IP={calculate_ip(manager)}")
         create_schedule(sch_uuid, hostname, calculate_ip(manager), metric)
 
-        renamed_manager = rename_switch(manager)
-        # Starts metric manager first
-        command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
-        # Run Netmetric Manager using subprocess
-        manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
-                                           preexec_fn=os.setsid)
-        time.sleep(20)
-        # print(command)
+        manager_port_busy = read_manager_port_status()
+
+        while manager_port_busy:
+            print(f"Waiting for manager {renamed_manager} free the port up")
+            time.sleep(100)
 
         # Creates the metric agent command
         command = f"{m} {hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
@@ -199,6 +196,13 @@ def measurement_service(metric, period):
         shutil.move(f"agent-{sch_uuid}.xml", f"./results/xml/agent-{sch_uuid}.xml")
 
         time.sleep(period)
+
+
+def read_manager_port_status():
+    manager_netstat = subprocess.Popen(f"{m} {renamed_manager} netstat -anp | tr -s \" \t\" | cut -d' ' -f 4 | "
+                                       f"grep 12055").stdout
+    manager_netstat = manager_netstat.read().decode()
+    return manager_netstat is not None or not ''
 
 
 if __name__ == '__main__':
@@ -237,6 +241,16 @@ if __name__ == '__main__':
         os.makedirs("results")
     if not os.path.exists("results/xml"):
         os.makedirs("results/xml")
+
+    renamed_manager = rename_switch(manager)
+
+    # Starts metric manager first
+    command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
+    # Run Netmetric Manager using subprocess
+    manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
+                                       preexec_fn=os.setsid)
+    time.sleep(20)
+    # print(command)
 
     if tp_period > 0:
         mes_thread = threading.Thread(target=measurement_service, args=("throughput_tcp", tp_period,))
