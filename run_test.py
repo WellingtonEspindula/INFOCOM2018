@@ -200,18 +200,16 @@ def is_manager_busy():
     netstat_results.pop(0)                                          # Skipping the second line
     for result in netstat_results:
         formatted_result = [r for r in result.replace(' \t', '').split(' ') if r != '']
-        if formatted_result != '' or fomatted_result != None:
-            break
-        if formatted_result[3].find(metricmanager_port) != -1:
+        if len(formatted_result) >= 4 and formatted_result[3].find(metricmanager_port) != -1:
             return True
     return False
 
 
 if __name__ == '__main__':
     # Informing script arguments
-    parser = ArgumentParser(description='Runs the metricagent using a random trigger time')
-    parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
-    parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
+    parser = ArgumentParser(description='Performes a repeteaded mesure in a pair src-dst given period of each measure type')
+    #parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
+    #parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
     parser.add_argument("agent", type=str, help="Agent hostname")
     parser.add_argument("manager", type=str, help="Manager hostname")
     parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
