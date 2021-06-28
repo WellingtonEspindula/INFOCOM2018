@@ -171,12 +171,6 @@ def measurement_service(metric, period):
         print(f"Manager IP={calculate_ip(manager)}")
         create_schedule(sch_uuid, hostname, calculate_ip(manager), metric)
 
-        manager_port_busy = read_manager_port_status()
-
-        while manager_port_busy:
-            print(f"Waiting for manager {renamed_manager} free the port up")
-            time.sleep(100)
-
         # Creates the metric agent command
         command = f"{m} {hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
                   f"100 -u {sch_uuid} "
@@ -198,11 +192,19 @@ def measurement_service(metric, period):
         time.sleep(period)
 
 
-def read_manager_port_status():
-    manager_netstat = subprocess.Popen(f"{m} {renamed_manager} netstat -anp | tr -s \" \t\" | cut -d' ' -f 4 | "
-                                       f"grep 12055").stdout
-    manager_netstat = manager_netstat.read().decode()
-    return manager_netstat is not None or not ''
+def is_manager_busy():
+    metricmanager_port = "12055"
+    netstat_results = subprocess.Popen(f"{m} {renamed_manager} netstat -anp", shell=True, stdout=subprocess.PIPE).stdout
+    netstat_results = netstat_results.read().decode().split('\n')   # Separates lines
+    netstat_results.pop(0)                                          # Skipping the first line
+    netstat_results.pop(0)                                          # Skipping the second line
+    for result in netstat_results:
+        formatted_result = [r for r in result.replace(' \t', '').split(' ') if r != '']
+        if formatted_result != '' or fomatted_result != None:
+            break
+        if formatted_result[3].find(metricmanager_port) != -1:
+            return True
+    return False
 
 
 if __name__ == '__main__':
@@ -243,6 +245,10 @@ if __name__ == '__main__':
         os.makedirs("results/xml")
 
     renamed_manager = rename_switch(manager)
+    manager_port_busy = is_manager_busy()
+    while manager_port_busy:
+        print(f"Waiting for manager {renamed_manager} free the port up...")
+        time.sleep(5)
 
     # Starts metric manager first
     command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
