@@ -2,6 +2,7 @@
 
 import csv
 import os
+import sys
 import shutil
 import signal
 import subprocess
@@ -13,6 +14,8 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 m = "/home/mininet/mininet/util/m"
+
+manager_procs = []
 
 
 # def read_results_xml(filename):
@@ -171,6 +174,20 @@ def measurement_service(metric, period):
         print(f"Manager IP={calculate_ip(manager)}")
         create_schedule(sch_uuid, hostname, calculate_ip(manager), metric)
 
+        # renamed_manager = rename_switch(manager)
+        # manager_port_busy = is_manager_busy(renamed_manager)
+        # while manager_port_busy:
+        #    print(f"Waiting for manager {renamed_manager} free the port up...")
+        #    time.sleep(5)
+
+        # Starts metric manager first
+        command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
+        # Run Netmetric Manager using subprocess
+        manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
+                                       preexec_fn=os.setsid)
+        time.sleep(20)
+        # print(command)
+
         # Creates the metric agent command
         command = f"{m} {hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
                   f"100 -u {sch_uuid} "
@@ -178,7 +195,7 @@ def measurement_service(metric, period):
         # print(command)
 
         # Kill Netmetric Manager process
-        os.killpg(manager_process.pid, signal.SIGTERM)
+        # os.killpg(manager_process.pid, signal.SIGTERM)
 
         # Gather the data from metricagent xml output
         current_timestamp = str(datetime.now())
@@ -192,18 +209,26 @@ def measurement_service(metric, period):
         time.sleep(period)
 
 
-def is_manager_busy():
+def is_manager_busy(manager: str):
     metricmanager_port = "12055"
-    netstat_results = subprocess.Popen(f"{m} {renamed_manager} netstat -anp", shell=True, stdout=subprocess.PIPE).stdout
+    netstat_results = subprocess.Popen(f"{m} {manager} netstat -anp", shell=True, stdout=subprocess.PIPE).stdout
     netstat_results = netstat_results.read().decode().split('\n')   # Separates lines
     netstat_results.pop(0)                                          # Skipping the first line
-    netstat_results.pop(0)                                          # Skipping the second line
+    netstat_results.pop(0)                                          # The second one 
     for result in netstat_results:
         formatted_result = [r for r in result.replace(' \t', '').split(' ') if r != '']
         if len(formatted_result) >= 4 and formatted_result[3].find(metricmanager_port) != -1:
             return True
     return False
 
+
+def signal_handler(sig, frame):
+    print('Sig INT detected!')
+    print('Killing all Managers processes...')
+    for man_proc in manager_procs:
+        print(f'Sig KILL send to [PID={man_proc.pid}]')
+        os.killpg(man_proc.pid, signal.SIGTERM)
+    sys.exit(0)
 
 if __name__ == '__main__':
     # Informing script arguments
@@ -243,28 +268,31 @@ if __name__ == '__main__':
         os.makedirs("results/xml")
 
     renamed_manager = rename_switch(manager)
-    manager_port_busy = is_manager_busy()
+    manager_port_busy = is_manager_busy(renamed_manager)
     while manager_port_busy:
         print(f"Waiting for manager {renamed_manager} free the port up...")
+        os.system(f'{m} {renamed_manager} killall metricmanager')
         time.sleep(5)
-
+    
     # Starts metric manager first
     command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
     # Run Netmetric Manager using subprocess
     manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
                                        preexec_fn=os.setsid)
     time.sleep(20)
-    # print(command)
+
+    manager_procs.append(manager_process)
+    signal.signal(signal.SIGINT, signal_handler)
+
 
     if tp_period > 0:
         mes_thread = threading.Thread(target=measurement_service, args=("throughput_tcp", tp_period,))
-        # measurement_service("", tp_period)
         mes_thread.start()
-    # if rtt_period > 0:
-    #     mes_thread = threading.Thread(target=measurement_service, args=("rtt", rtt_period,))
-    #     # measurement_service("rtt", rtt_period)
-    #     mes_thread.start()
-    # if loss_period > 0:
-    #     mes_thread = threading.Thread(target=measurement_service, args=("loss", loss_period,))
-    #     # measurement_service("loss", loss_period)
-    #     mes_thread.start()
+   
+    if rtt_period > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=("rtt", rtt_period,))
+        mes_thread.start()
+    
+    if loss_period > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=("loss", loss_period,))
+        mes_thread.start()
