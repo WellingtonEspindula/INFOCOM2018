@@ -14,7 +14,6 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 m = "/home/mininet/mininet/util/m"
-
 manager_procs = []
 
 
@@ -29,7 +28,7 @@ manager_procs = []
 #     status = root.find("./ativas/status").text
 #     return [upload_min, upload_max, upload_avg, download_min, download_max, download_avg, status]
 
-def rename_switch(switchname):
+def rename_switch(switchname: str):
     ran_lower_bound = 1
     ran_upper_bound = 20
 
@@ -133,20 +132,28 @@ def create_schedule(sch_uuid, agent, manager_ip, metric):
         file.write(schedule)
 
 
-def read_results_xml(filename):
+def read_results_xml(metric: str, filename: str):
     root = et.parse(filename).getroot()
+    
+    if metric == 'throughput_tcp':
+        throughput_tcp_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/upavg")
+        throughput_tcp_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/downavg")
 
-    throughput_tcp_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/upavg")
-    throughput_tcp_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/downavg")
+        return [metric, throughput_tcp_upload_avg, throughput_tcp_download_avg]
 
-    rtt_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"rtt\"]/upavg")
-    rtt_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"rtt\"]/downavg")
+    elif metric == 'rtt':
+        rtt_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"rtt\"]/upavg")
+        rtt_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"rtt\"]/downavg")
 
-    loss_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"loss\"]/upavg")
-    loss_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"loss\"]/downavg")
+        return [metric, rtt_upload_avg, rtt_download_avg]
 
-    return [throughput_tcp_upload_avg, throughput_tcp_download_avg, rtt_upload_avg, rtt_download_avg,
-            loss_upload_avg, loss_download_avg]
+    elif metric == 'loss':
+        loss_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"loss\"]/upavg")
+        loss_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"loss\"]/downavg")
+
+        return [metric, loss_upload_avg, loss_download_avg]
+    # return [throughput_tcp_upload_avg, throughput_tcp_download_avg, rtt_upload_avg, rtt_download_avg,
+    #         loss_upload_avg, loss_download_avg]
 
 
 def parse_xml_text_if_exists(root, xpath):
@@ -174,33 +181,15 @@ def measurement_service(metric, period):
         print(f"Manager IP={calculate_ip(manager)}")
         create_schedule(sch_uuid, hostname, calculate_ip(manager), metric)
 
-        # renamed_manager = rename_switch(manager)
-        # manager_port_busy = is_manager_busy(renamed_manager)
-        # while manager_port_busy:
-        #    print(f"Waiting for manager {renamed_manager} free the port up...")
-        #    time.sleep(5)
-
-        # Starts metric manager first
-        command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
-        # Run Netmetric Manager using subprocess
-        manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
-                                       preexec_fn=os.setsid)
-        time.sleep(20)
-        # print(command)
-
         # Creates the metric agent command
         command = f"{m} {hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
                   f"100 -u {sch_uuid} "
         os.system(command)
-        # print(command)
-
-        # Kill Netmetric Manager process
-        # os.killpg(manager_process.pid, signal.SIGTERM)
 
         # Gather the data from metricagent xml output
         current_timestamp = str(datetime.now())
         data = [hostname, manager, current_timestamp, sch_uuid]
-        data.extend(read_results_xml(f"agent-{sch_uuid}.xml"))
+        data.extend(read_results_xml(metric, f"agent-{sch_uuid}.xml"))
 
         write_data_csv("results/nm_last_results.csv", data)
         # Moves the XML file from results/xml folder
@@ -210,19 +199,19 @@ def measurement_service(metric, period):
 
 
 def is_manager_busy(manager: str):
-    metricmanager_port = "12055"
+    manager_port = "12055"
     netstat_results = subprocess.Popen(f"{m} {manager} netstat -anp", shell=True, stdout=subprocess.PIPE).stdout
-    netstat_results = netstat_results.read().decode().split('\n')   # Separates lines
-    netstat_results.pop(0)                                          # Skipping the first line
-    netstat_results.pop(0)                                          # The second one 
+    netstat_results = netstat_results.read().decode().split('\n')  # Separates lines
+    netstat_results.pop(0)  # Skipping the first line
+    netstat_results.pop(0)  # The second one
     for result in netstat_results:
         formatted_result = [r for r in result.replace(' \t', '').split(' ') if r != '']
-        if len(formatted_result) >= 4 and formatted_result[3].find(metricmanager_port) != -1:
+        if len(formatted_result) >= 4 and formatted_result[3].find(manager_port) != -1:
             return True
     return False
 
 
-def signal_handler(sig, frame):
+def interruption_handler(sig, frame):
     print('Sig INT detected!')
     print('Killing all Managers processes...')
     for man_proc in manager_procs:
@@ -230,11 +219,13 @@ def signal_handler(sig, frame):
         os.killpg(man_proc.pid, signal.SIGTERM)
     sys.exit(0)
 
+
 if __name__ == '__main__':
     # Informing script arguments
-    parser = ArgumentParser(description='Performes a repeteaded mesure in a pair src-dst given period of each measure type')
-    #parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
-    #parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
+    parser = ArgumentParser(
+        description='Performes a repeteaded mesure in a pair src-dst given period of each measure type')
+    # parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
+    # parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
     parser.add_argument("agent", type=str, help="Agent hostname")
     parser.add_argument("manager", type=str, help="Manager hostname")
     parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
@@ -270,10 +261,11 @@ if __name__ == '__main__':
     renamed_manager = rename_switch(manager)
     manager_port_busy = is_manager_busy(renamed_manager)
     while manager_port_busy:
+        manager_port_busy = is_manager_busy(renamed_manager)
         print(f"Waiting for manager {renamed_manager} free the port up...")
         os.system(f'{m} {renamed_manager} killall metricmanager')
         time.sleep(5)
-    
+
     # Starts metric manager first
     command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
     # Run Netmetric Manager using subprocess
@@ -282,17 +274,16 @@ if __name__ == '__main__':
     time.sleep(20)
 
     manager_procs.append(manager_process)
-    signal.signal(signal.SIGINT, signal_handler)
-
+    signal.signal(signal.SIGINT, interruption_handler)
 
     if tp_period > 0:
         mes_thread = threading.Thread(target=measurement_service, args=("throughput_tcp", tp_period,))
         mes_thread.start()
-   
+
     if rtt_period > 0:
         mes_thread = threading.Thread(target=measurement_service, args=("rtt", rtt_period,))
         mes_thread.start()
-    
+
     if loss_period > 0:
         mes_thread = threading.Thread(target=measurement_service, args=("loss", loss_period,))
         mes_thread.start()
