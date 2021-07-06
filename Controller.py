@@ -1495,6 +1495,7 @@ class BQoEPathApi(app_manager.RyuApp):
         self.logger.info("Possible paths between src: %s and dst: %s\n%s", src, dst, json.dumps(dict_path, indent=4))
         return dict_path
 
+    # TODO Improve it using Regex
     def switch_from_host(self, path):
         ran_lower_bound = 1
         ran_upper_bound = 20
@@ -1513,7 +1514,7 @@ class BQoEPathApi(app_manager.RyuApp):
 
         if path_first == 'r':
             switch_index = int(path_rest) + ran_lower_bound - 1
-        elif path_first == 'm':
+        elif path_first == 'm' and path[1] != 'a':
             switch_index = int(path_rest) + metro_lower_bound - 1
         elif path_first == 'a':
             switch_index = int(path_rest) + access_lower_bound - 1
@@ -1578,6 +1579,14 @@ class BQoEPathApi(app_manager.RyuApp):
             return "10.0.0.253"
         elif host == "ext1":
             return "10.0.0.254"
+        elif host == "man1":
+            return "10.0.0.241"
+        elif host == "man2":
+            return "10.0.0.242"
+        elif host == "man3":
+            return "10.0.0.243"
+        elif host == "man4":
+            return "10.0.0.244"
         else:
             first = host[0]
             if first == 'u':

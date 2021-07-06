@@ -1,3 +1,7 @@
+man1 man1-eth0:s30-eth90
+man2 man2-eth0:s31-eth90
+man3 man3-eth0:s32-eth90
+man4 man4-eth0:s33-eth90
 cdn1 cdn1-eth0:s25-eth99
 cdn2 cdn2-eth0:s29-eth99
 cdn3 cdn3-eth0:s31-eth99
@@ -265,9 +269,9 @@ s26 lo:  s26-eth2:s29-eth2 s26-eth3:s27-eth3 s26-eth4:s30-eth1 s26-eth100:a1-eth
 s27 lo:  s27-eth1:s22-eth7 s27-eth2:s28-eth2 s27-eth3:s26-eth3 s27-eth4:s30-eth2 s27-eth100:a2-eth0
 s28 lo:  s28-eth1:s23-eth7 s28-eth2:s27-eth2 s28-eth3:s29-eth3 s28-eth4:s31-eth1 s28-eth100:a3-eth0
 s29 lo:  s29-eth2:s26-eth2 s29-eth3:s28-eth3 s29-eth4:s31-eth2 s29-eth99:cdn2-eth0 s29-eth100:a4-eth0
-s30 lo:  s30-eth1:s26-eth4 s30-eth2:s27-eth4 s30-eth3:s31-eth3 s30-eth4:s32-eth4 s30-eth5:s33-eth5 s30-eth100:c1-eth0
-s31 lo:  s31-eth1:s28-eth4 s31-eth2:s29-eth4 s31-eth3:s30-eth3 s31-eth4:s33-eth4 s31-eth5:s32-eth5 s31-eth99:cdn3-eth0 s31-eth100:c2-eth0
-s32 lo:  s32-eth1:s34-eth1 s32-eth3:s33-eth3 s32-eth4:s30-eth4 s32-eth5:s31-eth5 s32-eth100:c3-eth0
-s33 lo:  s33-eth1:s34-eth2 s33-eth3:s32-eth3 s33-eth4:s31-eth4 s33-eth5:s30-eth5 s33-eth100:c4-eth0
+s30 lo:  s30-eth1:s26-eth4 s30-eth2:s27-eth4 s30-eth3:s31-eth3 s30-eth4:s32-eth4 s30-eth5:s33-eth5 s30-eth90:man1-eth0 s30-eth100:c1-eth0
+s31 lo:  s31-eth1:s28-eth4 s31-eth2:s29-eth4 s31-eth3:s30-eth3 s31-eth4:s33-eth4 s31-eth5:s32-eth5 s31-eth90:man2-eth0 s31-eth99:cdn3-eth0 s31-eth100:c2-eth0
+s32 lo:  s32-eth1:s34-eth1 s32-eth3:s33-eth3 s32-eth4:s30-eth4 s32-eth5:s31-eth5 s32-eth90:man3-eth0 s32-eth100:c3-eth0
+s33 lo:  s33-eth1:s34-eth2 s33-eth3:s32-eth3 s33-eth4:s31-eth4 s33-eth5:s30-eth5 s33-eth90:man4-eth0 s33-eth100:c4-eth0
 s34 lo:  s34-eth1:s32-eth1 s34-eth2:s33-eth1 s34-eth99:ext1-eth0 s34-eth100:i1-eth0
 c0

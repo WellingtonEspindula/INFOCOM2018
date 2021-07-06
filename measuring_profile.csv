@@ -1,2 +1,4 @@
-agent;manager;polling-throughput-tcp;polling-rtt;polling-loss
-u001;s1;5;0.5;-1
+agent;manager;first-trigger-time;polling-throughput-tcp;polling-rtt;polling-loss
+u001;man1;1.2;5;0.5;-1
+u002;man2;0.2;5;0.5;-1
+u002;man2;0.2;5;0.5;-1

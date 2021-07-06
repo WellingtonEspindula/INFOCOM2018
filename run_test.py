@@ -240,19 +240,6 @@ if __name__ == '__main__':
     hostname = args.agent
     manager = args.manager
 
-    # if metric != "throughput_tcp" and metric != "rtt" and metric != "loss":
-    #    print("Undefined Metric. Exiting...")
-    #    exit(1)
-
-    # Time to run depends on it's running or fast first trigger mode
-    # if args.fast:
-    #     first_trigger_time = (3 + (random() % 29))
-    # else:
-    #     first_trigger_time = ((60 * (random() % 10)) + (30 + (random() % 29)))
-
-    # print(f"Running in {first_trigger_time} s")
-    # time.sleep(first_trigger_time)
-
     if not os.path.exists("results"):
         os.makedirs("results")
     if not os.path.exists("results/xml"):
