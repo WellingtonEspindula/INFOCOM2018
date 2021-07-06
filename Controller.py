@@ -617,7 +617,7 @@ class BQoEPathApi(app_manager.RyuApp):
             index2 = self.nodes.index(path[i + 1])
             index1 = self.nodes.index(path[i])
             final_bandwidth = self.bw[index1][index2] if (
-                        self.bw[index1][index2] < final_bandwidth) else final_bandwidth
+                    self.bw[index1][index2] < final_bandwidth) else final_bandwidth
             # print("FR: " + str(finalRtt) + " s: " + str(self.rtt[index1][index2]))
             final_rtt = self.rtt[index1][index2] + final_rtt
 
@@ -881,7 +881,6 @@ class BQoEPathApi(app_manager.RyuApp):
                               dest_ip=self.ip_from_host(_nodes[_dstNode]), path=_humanpath)
 
             return result
-
 
     def calculateDistanceMetric(self, mos, bwDistance):
         return (5 - mos) + (0.1 * bwDistance)
@@ -1421,9 +1420,9 @@ class BQoEPathApi(app_manager.RyuApp):
                     # return dict(mos = -1, tp = -1, dst = "", dest_ip="", path = "OK")
                     # mos = round(mos, 2)
                     if (self.calculateDistanceMetric(mos, bwDistanceAux) < (
-                    self.calculateDistanceMetric(mosNode[neighbour],
-                                                 bwDistanceNode[
-                                                     neighbour]))):  # or ((float(mos) == mosNodenode) and (bwAux > bwNodenode))):
+                            self.calculateDistanceMetric(mosNode[neighbour],
+                                                         bwDistanceNode[
+                                                             neighbour]))):  # or ((float(mos) == mosNodenode) and (bwAux > bwNodenode))):
                         # print "NOVO: " + str(self.calculateDistanceMetric(mos,bwDistanceAux)) + " ANTIGO: " + str(self.calculateDistanceMetric(mosNode[neighbour],bwDistanceNode[neighbour])) + " MOS ANTIGO " + str(mosNode[neighbour]) + " MOS NOVO " + str(mos)
                         gc = gc + 1
                         prevNode[neighbour] = node
@@ -1750,9 +1749,6 @@ class BQoEPathController(ControllerBase):
         body = local_edges
         return Response(content_type='text/plain', body=body, charset="UTF-8")
 
-
-
-
     @route('bqoepath', url, methods=['GET'], requirements={'method': r'widestpath-[a-z0-9\-]*'})
     def widest_path(self, req, **kwargs):
         if not self.bqoe_path_spp.nodes:
@@ -1951,14 +1947,10 @@ class BQoEPathController(ControllerBase):
                       dest_ip=self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), path=humanmin_sp)
         self.bqoe_path_spp.deploy_any_path(humanmin_sp)
 
-        auxmap = {}
-        auxmap["name"] = humanmin_sp[0]
-        auxmap["mos"] = final_mos
-        auxmap["tp"] = final_tp
-        auxmap["ip"] = self.bqoe_path_spp.ip_from_host(humanmin_sp[0])
-        auxmap["path"] = humanmin_sp
+        auxmap = {"name": humanmin_sp[0], "mos": final_mos, "tp": final_tp,
+                  "ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
 
-        if self.bqoe_path_spp.mydict.get(src) == None:
+        if self.bqoe_path_spp.mydict.get(src) is None:
             self.bqoe_path_spp.mydict[src] = {}
 
         self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
@@ -2001,8 +1993,8 @@ class BQoEPathController(ControllerBase):
             elif p1 == "m5" and p2 == "m4":
                 d['rtt'] = 3
             else:
-                d[
-                    'rtt'] = 1  # self.bqoe_path_spp.rtt[self.bqoe_path_spp.nodes.index(p1)][self.bqoe_path_spp.nodes.index(p2)]
+                d['rtt'] = 1  # self.bqoe_path_spp.rtt[self.bqoe_path_spp.nodes.index(p1)][
+                # self.bqoe_path_spp.nodes.index(p2)]
         #   if (u == p1 and v == p2) or (u == p2 and v == p1):
         #        d['rtt'] = float(w)
 
@@ -2018,8 +2010,7 @@ class BQoEPathController(ControllerBase):
                 # print str(prev)
                 # print "---------------"
                 # print str(dist)
-                sp = []
-                sp.append(dest)
+                sp = [dest]
                 pv = prev[dest]
                 while pv != src:
                     sp.append(pv)
@@ -2034,9 +2025,7 @@ class BQoEPathController(ControllerBase):
         else:
             min_sp = nx.shortest_path(graph, source=src, target=dst, weight='rtt')
 
-        humanmin_sp = []
-        for elem in min_sp:
-            humanmin_sp.append(self.bqoe_path_spp.host_from_switch(elem))
+        humanmin_sp = [self.bqoe_path_spp.host_from_switch(elem) for elem in min_sp]
 
         final_mos = self.bqoe_path_spp.calculate_composed_mos(humanmin_sp)
         final_tp = 10000000000
@@ -2053,14 +2042,83 @@ class BQoEPathController(ControllerBase):
                       dest_ip=self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), path=humanmin_sp)
         self.bqoe_path_spp.deploy_any_path(humanmin_sp)
 
-        auxmap = {}
-        auxmap["name"] = humanmin_sp[0]
-        auxmap["mos"] = final_mos
-        auxmap["tp"] = final_tp
-        auxmap["ip"] = self.bqoe_path_spp.ip_from_host(humanmin_sp[0])
-        auxmap["path"] = humanmin_sp
+        auxmap = {"name": humanmin_sp[0], "mos": final_mos, "tp": final_tp,
+                  "ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
 
-        if self.bqoe_path_spp.mydict.get(src) == None:
+        if self.bqoe_path_spp.mydict.get(src) is None:
+            self.bqoe_path_spp.mydict[src] = {}
+
+        self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
+
+        body = json.dumps(result, indent=4)
+        return Response(content_type='application/json', body=body, charset="UTF-8")
+
+    @route('bqoepath', url, methods=['GET'], requirements={'method': r'pathtomanager-[a-z0-9\-]*'})
+    def pathtomanager(self, req, **kwargs):
+        # if not self.bqoe_path_spp.nodes:
+        #     result = dict(mos=-1, tp=-1, dst="", dest_ip="", path="NO_SNAPSHOT")
+        #     body = json.dumps(result, indent=2)
+        #     return Response(content_type='application/json', body=body, charset="UTF-8")
+
+        src = kwargs['method'][11:].split('-')[0]
+        dst = kwargs['method'][11:].split('-')[1]
+
+        graph = self.bqoe_path_spp.get_graph()
+        for u, v, d in graph.edges(data=True):
+            p1 = self.bqoe_path_spp.host_from_switch(u)
+            p2 = self.bqoe_path_spp.host_from_switch(v)
+            if ((p1 == "a2" and p2 == "a3") or (p1 == "c2" and p2 == "c1") or (p1 == "m5" and p2 == "m1") or (
+                    p1 == "a1" and p2 == "a4") or (p1 == "m3" and p2 == "m2")):
+                d['rtt'] = 1000
+            elif p1 == "m5" and p2 == "m4":
+                d['rtt'] = 3
+            else:
+                d['rtt'] = 1
+
+        min_splen = 100000000
+        min_sp = []
+        if dst == "all":
+            destinations_array = ["man1", "man2", "man3", "man4"]
+            random.shuffle(destinations_array)
+            for dest in destinations_array:
+                print(dest)
+                prev, dist = bellman_ford(graph, source=src, weight='rtt')
+                sp = [dest]
+                pv = prev[dest]
+                while pv != src:
+                    sp.append(pv)
+                    pv = prev[pv]
+                sp.append(src)
+
+                splen = dist[dest]
+                print("DEST: " + dest + " LEN: " + str(splen) + " PATH " + str(sp) + " MIN: " + str(min_splen))
+                if splen < min_splen:
+                    min_sp = sp
+                    min_splen = splen
+        else:
+            min_sp = nx.shortest_path(graph, source=src, target=dst, weight='rtt')
+
+        humanmin_sp = [self.bqoe_path_spp.host_from_switch(elem) for elem in min_sp]
+
+        final_mos = self.bqoe_path_spp.calculate_composed_mos(humanmin_sp)
+        final_tp = 10000000000
+        for i in range(0, (len(humanmin_sp) - 2)):
+            index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
+            index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
+            if self.bqoe_path_spp.bw[index1][index2] < final_tp:
+                final_tp = self.bqoe_path_spp.bw[index1][index2]
+        # self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] - BW_BITRATE
+        # if self.bqoe_path_spp.bw[index1][index2] < 0:
+        #    self.bqoe_path_spp.bw[index1][index2] = 0.0
+
+        result = {"mos": final_mos, "tp": final_tp, "dst": humanmin_sp[0],
+                  "dest_ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
+        self.bqoe_path_spp.deploy_any_path(humanmin_sp)
+
+        auxmap = {"name": humanmin_sp[0], "mos": final_mos, "tp": final_tp,
+                  "ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
+
+        if self.bqoe_path_spp.mydict.get(src) is None:
             self.bqoe_path_spp.mydict[src] = {}
 
         self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
