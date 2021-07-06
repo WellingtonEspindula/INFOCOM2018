@@ -82,6 +82,14 @@ def calculate_ip(p):
         return "10.0.0.253"
     elif p == "ext1":
         return "10.0.0.254"
+    elif p == "man1":
+        return "10.0.0.241"
+    elif p == "man2":
+        return "10.0.0.242"
+    elif p == "man3":
+        return "10.0.0.243"
+    elif p == "man4":
+        return "10.0.0.244"
     else:
         pfirst = p[0]
         if pfirst == "s":
@@ -178,17 +186,17 @@ def measurement_service(metric, period):
         sch_uuid = str(uuid.uuid4())
         print(f"This measure is identified by uuid={sch_uuid}")
 
-        print(f"Manager IP={calculate_ip(manager)}")
-        create_schedule(sch_uuid, hostname, calculate_ip(manager), metric)
+        print(f"Manager IP={calculate_ip(manager_hostname)}")
+        create_schedule(sch_uuid, agent_hostname, calculate_ip(manager_hostname), metric)
 
         # Creates the metric agent command
-        command = f"{m} {hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
+        command = f"{m} {agent_hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
                   f"100 -u {sch_uuid} "
         os.system(command)
 
         # Gather the data from metricagent xml output
         current_timestamp = str(datetime.now())
-        data = [hostname, manager, current_timestamp, sch_uuid]
+        data = [agent_hostname, manager_hostname, current_timestamp, sch_uuid]
         data.extend(read_results_xml(metric, f"agent-{sch_uuid}.xml"))
 
         write_data_csv("results/nm_last_results.csv", data)
@@ -223,11 +231,12 @@ def interruption_handler(sig, frame):
 if __name__ == '__main__':
     # Informing script arguments
     parser = ArgumentParser(
-        description='Performes a repeteaded mesure in a pair src-dst given period of each measure type')
+        description='Performs a repeated measure in a pair src-dst given period of each measure type')
     # parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
     # parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
-    parser.add_argument("agent", type=str, help="Agent hostname")
-    parser.add_argument("manager", type=str, help="Manager hostname")
+    parser.add_argument("-m", "--manager", help="Uses Manager", action="store_true")
+    parser.add_argument("agent_hostname", type=str, help="Agent hostname")
+    parser.add_argument("manager_hostname", type=str, help="Manager hostname")
     parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
     parser.add_argument("rtt_period", type=float, help="Rtt measurement repeating period (min)")
     parser.add_argument("loss_period", type=float, help="Loss measurement repeating period (min)")
@@ -237,15 +246,16 @@ if __name__ == '__main__':
     tp_period = args.throughput_tcp_period * 60
     rtt_period = args.rtt_period * 60
     loss_period = args.loss_period * 60
-    hostname = args.agent
-    manager = args.manager
+    agent_hostname = args.agent_hostname
+    manager_hostname = args.manager_hostname
+    uses_manager = args.manager
 
     if not os.path.exists("results"):
         os.makedirs("results")
     if not os.path.exists("results/xml"):
         os.makedirs("results/xml")
 
-    renamed_manager = rename_switch(manager)
+    renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
     manager_port_busy = is_manager_busy(renamed_manager)
     while manager_port_busy:
         manager_port_busy = is_manager_busy(renamed_manager)
