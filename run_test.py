@@ -235,6 +235,7 @@ if __name__ == '__main__':
     # parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
     # parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
     parser.add_argument("-m", "--manager", help="Uses Manager", action="store_true")
+    parser.add_argument("-s", "--start_metricman", help="Start Netmetric Manager on Manager", action="store_true")
     parser.add_argument("agent_hostname", type=str, help="Agent hostname")
     parser.add_argument("manager_hostname", type=str, help="Manager hostname")
     parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
@@ -249,29 +250,31 @@ if __name__ == '__main__':
     agent_hostname = args.agent_hostname
     manager_hostname = args.manager_hostname
     uses_manager = args.manager
+    start_manager = args.start_metricman
 
     if not os.path.exists("results"):
         os.makedirs("results")
     if not os.path.exists("results/xml"):
         os.makedirs("results/xml")
 
-    renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
-    manager_port_busy = is_manager_busy(renamed_manager)
-    while manager_port_busy:
+    if start_manager:
+        renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
         manager_port_busy = is_manager_busy(renamed_manager)
-        print(f"Waiting for manager {renamed_manager} free the port up...")
-        os.system(f'{m} {renamed_manager} killall metricmanager')
-        time.sleep(5)
+        while manager_port_busy:
+            manager_port_busy = is_manager_busy(renamed_manager)
+            print(f"Waiting for manager {renamed_manager} free the port up...")
+            os.system(f'{m} {renamed_manager} killall metricmanager')
+            time.sleep(5)
 
-    # Starts metric manager first
-    command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
-    # Run Netmetric Manager using subprocess
-    manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
-                                       preexec_fn=os.setsid)
-    time.sleep(20)
+        # Starts metric manager first
+        command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
+        # Run Netmetric Manager using subprocess
+        manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
+                                           preexec_fn=os.setsid)
+        time.sleep(20)
 
-    manager_procs.append(manager_process)
-    signal.signal(signal.SIGINT, interruption_handler)
+        manager_procs.append(manager_process)
+        signal.signal(signal.SIGINT, interruption_handler)
 
     if tp_period > 0:
         mes_thread = threading.Thread(target=measurement_service, args=("throughput_tcp", tp_period,))

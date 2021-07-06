@@ -2060,8 +2060,8 @@ class BQoEPathController(ControllerBase):
         #     body = json.dumps(result, indent=2)
         #     return Response(content_type='application/json', body=body, charset="UTF-8")
 
-        src = kwargs['method'][11:].split('-')[0]
-        dst = kwargs['method'][11:].split('-')[1]
+        src = kwargs['method'][14:].split('-')[0]
+        dst = kwargs['method'][14:].split('-')[1]
 
         graph = self.bqoe_path_spp.get_graph()
         for u, v, d in graph.edges(data=True):
@@ -2096,32 +2096,35 @@ class BQoEPathController(ControllerBase):
                     min_sp = sp
                     min_splen = splen
         else:
+            print(f"src={src}, dst={dst}")
             min_sp = nx.shortest_path(graph, source=src, target=dst, weight='rtt')
 
         humanmin_sp = [self.bqoe_path_spp.host_from_switch(elem) for elem in min_sp]
 
-        final_mos = self.bqoe_path_spp.calculate_composed_mos(humanmin_sp)
-        final_tp = 10000000000
-        for i in range(0, (len(humanmin_sp) - 2)):
-            index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
-            index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
-            if self.bqoe_path_spp.bw[index1][index2] < final_tp:
-                final_tp = self.bqoe_path_spp.bw[index1][index2]
+        #final_mos = self.bqoe_path_spp.calculate_composed_mos(humanmin_sp)
+        #final_tp = 10000000000
+        #for i in range(0, (len(humanmin_sp) - 2)):
+        #    index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
+        #    index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
+        #    if self.bqoe_path_spp.bw[index1][index2] < final_tp:
+        #        final_tp = self.bqoe_path_spp.bw[index1][index2]
         # self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] - BW_BITRATE
         # if self.bqoe_path_spp.bw[index1][index2] < 0:
         #    self.bqoe_path_spp.bw[index1][index2] = 0.0
 
-        result = {"mos": final_mos, "tp": final_tp, "dst": humanmin_sp[0],
+        #result = {"mos": final_mos, "tp": final_tp, "dst": humanmin_sp[0],
+        #          "dest_ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
+        result = {"dst": humanmin_sp[0],
                   "dest_ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
         self.bqoe_path_spp.deploy_any_path(humanmin_sp)
 
-        auxmap = {"name": humanmin_sp[0], "mos": final_mos, "tp": final_tp,
-                  "ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
+        #auxmap = {"name": humanmin_sp[0], "mos": final_mos, "tp": final_tp,
+        #          "ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
 
-        if self.bqoe_path_spp.mydict.get(src) is None:
-            self.bqoe_path_spp.mydict[src] = {}
+        #if self.bqoe_path_spp.mydict.get(src) is None:
+        #    self.bqoe_path_spp.mydict[src] = {}
 
-        self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
+        #self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
 
         body = json.dumps(result, indent=4)
         return Response(content_type='application/json', body=body, charset="UTF-8")
