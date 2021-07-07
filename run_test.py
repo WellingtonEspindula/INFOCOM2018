@@ -12,6 +12,7 @@ import threading
 import xml.etree.ElementTree as et
 from argparse import ArgumentParser
 from datetime import datetime
+from random import random as random
 
 m = "/home/mininet/mininet/util/m"
 manager_procs = []
@@ -180,13 +181,19 @@ def write_data_csv(filename, data):
 
 
 def measurement_service(metric, period):
+    # First of all, must wait the first trigger time
+    first_trigger_time = (3 + (random() % 29))
+    print(f'Waiting for {first_trigger_time} s for stating this measure')
+    time.sleep(first_trigger_time)
+
     # Keep waiting the given period (polling) and calls metricagent
     while True:
         # Generate Schedule's UUID
         sch_uuid = str(uuid.uuid4())
         print(f"This measure is identified by uuid={sch_uuid}")
-
         print(f"Manager IP={calculate_ip(manager_hostname)}")
+
+        # Generate Schedule XML for this measure
         create_schedule(sch_uuid, agent_hostname, calculate_ip(manager_hostname), metric)
 
         # Creates the metric agent command
@@ -242,6 +249,9 @@ if __name__ == '__main__':
     parser.add_argument("rtt_period", type=float, help="Rtt measurement repeating period (min)")
     parser.add_argument("loss_period", type=float, help="Loss measurement repeating period (min)")
     args = parser.parse_args()
+
+    # Init with constant seed
+    random.seed(50)
 
     # Read parameters from input
     tp_period = args.throughput_tcp_period * 60
