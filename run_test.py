@@ -12,10 +12,15 @@ import threading
 import xml.etree.ElementTree as et
 from argparse import ArgumentParser
 from datetime import datetime
-from random import random as random
+# from random import random as random
+import random as rand
 
 m = "/home/mininet/mininet/util/m"
 manager_procs = []
+
+
+def random():
+    return int.from_bytes(os.urandom(16), byteorder="big")
 
 
 # def read_results_xml(filename):
@@ -143,7 +148,7 @@ def create_schedule(sch_uuid, agent, manager_ip, metric):
 
 def read_results_xml(metric: str, filename: str):
     root = et.parse(filename).getroot()
-    
+
     if metric == 'throughput_tcp':
         throughput_tcp_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/upavg")
         throughput_tcp_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/downavg")
@@ -251,7 +256,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Init with constant seed
-    random.seed(50)
+    rand.seed(50)
 
     # Read parameters from input
     tp_period = args.throughput_tcp_period * 60
