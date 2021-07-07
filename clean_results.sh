@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 
-rm results/load.csv
-rm results/xml/*
+sudo rm /tmp/schedule-*
+sudo rm agent-*
+sudo rm results/nm_last_results.csv
+sudo rm -r results/xml/*

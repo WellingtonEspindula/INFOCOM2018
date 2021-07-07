@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 
 # Run Agents
 host="localhost"
@@ -12,6 +12,21 @@ sudo $m man2 /usr/netmetric/sbin/metricmanager &
 sudo $m man3 /usr/netmetric/sbin/metricmanager &
 sudo $m man4 /usr/netmetric/sbin/metricmanager &
 
+pids=()
+
+trap ctrl_c INT
+
+function cntrl_c() {
+	echo "SIG INT Detected"
+	echo "Killing processes..."
+	for pid in $pids; do
+		echo "Killing process PID=$pid"
+		sudo kill -9 "$pid"
+	done
+}
+
+rm /tmp/pids_running.txt
+
 while read -r line
 do
   hostname=$(echo "$line" | cut -d ';' -f 1) # First csv column
@@ -24,7 +39,8 @@ do
 
   curl -X GET "http://$host:$port/bqoepath/pathtomanager-$hostname-$manager" -s
 
-  pid=$(sudo ./run_test.py -m "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" & echo $!)
-  echo "Monsieur, Mon PID est $pid"
-  #echo "sudo ./run_test.py -m "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" &"
+  python3 run_test.py -m "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" &
+  pid=$!
+  echo $pid >> /tmp/pids_running.txt
+  pids+=(pid)
 done < <(tail -n +2 measuring_profile.csv)
