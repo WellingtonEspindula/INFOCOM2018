@@ -292,12 +292,20 @@ class BQoEPathApi(app_manager.RyuApp):
         elif host == "src2":
             return "10.0.0.250"
         elif host == "man1":
-            return "10.0.0.251"
+            return "10.0.0.241"
         elif host == "man2":
-            return "10.0.0.252"
+            return "10.0.0.242"
         elif host == "man3":
-            return "10.0.0.253"
+            return "10.0.0.243"
         elif host == "man4":
+            return "10.0.0.244"
+        elif host == "cdn1":
+            return "10.0.0.251"
+        elif host == "cdn2":
+            return "10.0.0.252"
+        elif host == "cdn3":
+            return "10.0.0.253"
+        elif host == "cdn4":
             return "10.0.0.254"
         else:
             first = host[0]
