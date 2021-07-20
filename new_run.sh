@@ -1,4 +1,6 @@
-#!/usr/bin/bash
+#!/bin/bash
+
+m="/home/mininet/mininet/util/m"
 
 # Run Agents
 host="localhost"

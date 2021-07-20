@@ -34,7 +34,7 @@ def random():
 #     status = root.find("./ativas/status").text
 #     return [upload_min, upload_max, upload_avg, download_min, download_max, download_avg, status]
 
-def rename_switch(switchname: str):
+def rename_switch(switchname: str) -> str:
     ran_lower_bound = 1
     ran_upper_bound = 20
 
@@ -52,30 +52,25 @@ def rename_switch(switchname: str):
 
     sp = int(switchname[1:])
     if ran_lower_bound <= sp <= ran_upper_bound:
-        new_sp = sp - ran_lower_bound
-        new_sp = new_sp + 1
-        return f"r{new_sp}"
+        return create_switch_name(sp, ran_lower_bound, 'r')
     elif metro_lower_bound <= sp <= metro_upper_bound:
-        new_sp = sp - metro_lower_bound
-        new_sp = new_sp + 1
-        return f"m{new_sp}"
+        return create_switch_name(sp, metro_lower_bound, 'm')
     elif access_lower_bound <= sp <= access_upper_bound:
-        new_sp = sp - access_lower_bound
-        new_sp = new_sp + 1
-        return f"a{new_sp}"
+        return create_switch_name(sp, access_lower_bound, 'a')
     elif core_lower_bound <= sp <= core_upper_bound:
-        new_sp = sp - core_lower_bound
-        new_sp = new_sp + 1
-        return f"c{new_sp}"
+        return create_switch_name(sp, core_lower_bound, 'c')
     elif internet_lower_bound <= sp <= internet_upper_bound:
-        new_sp = sp - internet_lower_bound
-        new_sp = new_sp + 1
-        return f"i{new_sp}"
+        return create_switch_name(sp, internet_lower_bound, 'i')
     else:
         return f"{switchname}"
 
+def create_switch_name(sp, lower_bound, swtich_char) -> str:
+    new_sp = sp - lower_bound
+    new_sp = new_sp + 1
+    return f'{swtich_char}{new_sp}'
 
-def calculate_ip(p):
+
+def calculate_ip(p) -> str:
     if p == "src1":
         return "10.0.0.249"
     elif p == "src2":
@@ -107,7 +102,7 @@ def calculate_ip(p):
             return f"10.0.0.{ipfinal}"
 
 
-def create_schedule(sch_uuid, agent, manager_ip, metric):
+def create_schedule(sch_uuid, agent, manager_ip, metric) -> str:
     has_tp = metric == "throughput_tcp"
     has_rtt = metric == "rtt"
     has_loss = metric == "loss"
@@ -146,7 +141,7 @@ def create_schedule(sch_uuid, agent, manager_ip, metric):
         file.write(schedule)
 
 
-def read_results_xml(metric: str, filename: str):
+def read_results_xml(metric: str, filename: str) -> list:
     root = et.parse(filename).getroot()
 
     if metric == 'throughput_tcp':
@@ -208,8 +203,13 @@ def measurement_service(metric, period):
 
         # Gather the data from metricagent xml output
         current_timestamp = str(datetime.now())
-        data = [agent_hostname, manager_hostname, current_timestamp, sch_uuid]
-        data.extend(read_results_xml(metric, f"agent-{sch_uuid}.xml"))
+        data = [
+            agent_hostname,
+            manager_hostname,
+            current_timestamp,
+            sch_uuid,
+            *read_results_xml(metric, f"agent-{sch_uuid}.xml"),
+        ]
 
         write_data_csv("results/nm_last_results.csv", data)
         # Moves the XML file from results/xml folder

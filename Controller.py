@@ -146,11 +146,15 @@ class BQoEPathApi(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
 
+        self.logger.info("I'm a packet in a router. Please say what I have to do")
+
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         in_port = msg.match['in_port']
+
+        self.logger.info(f"Packet in handler -> [msg={msg}], [datapath={datapath}], [ofproto={ofproto}], [in_port={in_port}]")
 
         reg = re.compile(".([0-9]+)$")
 
