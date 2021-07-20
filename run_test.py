@@ -12,6 +12,7 @@ import threading
 import xml.etree.ElementTree as et
 from argparse import ArgumentParser
 from datetime import datetime
+from enum import Enum
 # from random import random as random
 import random as rand
 
@@ -19,22 +20,17 @@ m = "/home/mininet/mininet/util/m"
 manager_procs = []
 
 
+class MetricType(Enum):
+    RTT = "rtt"
+    LOSS = "loss"
+    THROUGHPUT_TCP = "throughput_tcp"
+
+
 def random():
     return int.from_bytes(os.urandom(16), byteorder="big")
 
 
-# def read_results_xml(filename):
-#     root = et.parse(filename).getroot()
-#     upload_min = root.find("./ativas/upmin").text
-#     upload_max = root.find("./ativas/upmax").text
-#     upload_avg = root.find("./ativas/upavg").text
-#     download_min = root.find("./ativas/downmin").text
-#     download_max = root.find("./ativas/downmax").text
-#     download_avg = root.find("./ativas/downavg").text
-#     status = root.find("./ativas/status").text
-#     return [upload_min, upload_max, upload_avg, download_min, download_max, download_avg, status]
-
-def rename_switch(switchname: str) -> str:
+def rename_switch(switch_name: str) -> str:
     ran_lower_bound = 1
     ran_upper_bound = 20
 
@@ -50,7 +46,7 @@ def rename_switch(switchname: str) -> str:
     internet_lower_bound = 34
     internet_upper_bound = 34
 
-    sp = int(switchname[1:])
+    sp = int(switch_name[1:])
     if ran_lower_bound <= sp <= ran_upper_bound:
         return create_switch_name(sp, ran_lower_bound, 'r')
     elif metro_lower_bound <= sp <= metro_upper_bound:
@@ -62,12 +58,13 @@ def rename_switch(switchname: str) -> str:
     elif internet_lower_bound <= sp <= internet_upper_bound:
         return create_switch_name(sp, internet_lower_bound, 'i')
     else:
-        return f"{switchname}"
+        return f"{switch_name}"
 
-def create_switch_name(sp, lower_bound, swtich_char) -> str:
+
+def create_switch_name(sp, lower_bound, switch_char) -> str:
     new_sp = sp - lower_bound
     new_sp = new_sp + 1
-    return f'{swtich_char}{new_sp}'
+    return f'{switch_char}{new_sp}'
 
 
 def calculate_ip(p) -> str:
@@ -102,15 +99,23 @@ def calculate_ip(p) -> str:
             return f"10.0.0.{ipfinal}"
 
 
-def create_schedule(sch_uuid, agent, manager_ip, metric) -> str:
-    has_tp = metric == "throughput_tcp"
-    has_rtt = metric == "rtt"
-    has_loss = metric == "loss"
+def create_schedule(sch_uuid: str, agent: str, manager_ip: str, metric: MetricType,
+                    probe_size: int, train_length: int, train_count: int, gap: int, timeout: int = 12) -> None:
+    has_tp = metric == MetricType.THROUGHPUT_TCP
+    has_rtt = metric == MetricType.RTT
+    has_loss = metric == MetricType.LOSS
 
+    schedule = generate_schedule_body(agent, gap, has_loss, has_rtt, has_tp, manager_ip, probe_size, timeout,
+                                      train_count, train_length)
+
+    save_schedule(sch_uuid, schedule)
+
+
+def generate_schedule_body(agent, gap, has_loss, has_rtt, has_tp, manager_ip, probe_size, timeout, train_count,
+                           train_length):
     tp = "<plugins>throughput_tcp</plugins>\n" if has_tp else ""
     rtt = "<plugins>rtt</plugins>\n" if has_rtt else ""
     loss = "<plugins>loss</plugins>\n" if has_loss else ""
-
     schedule = f"""<metrics>
     <ativas>
         <agt-index>1090</agt-index>
@@ -123,22 +128,39 @@ def create_schedule(sch_uuid, agent, manager_ip, metric) -> str:
             <state>-</state>
         </location>
         {tp}{rtt}{loss}
-        <timeout>12</timeout>
-        <probe-size>14520</probe-size>
-        <train-len>1440</train-len>
-        <train-count>1</train-count>
-        <gap-value>100000</gap-value>
+        <timeout>{timeout}</timeout>
+        <probe-size>{probe_size}</probe-size>
+        <train-len>{train_length}</train-len>
+        <train-count>{train_count}</train-count>
+        <gap-value>{gap}</gap-value>
         <protocol>1</protocol>
         <num-conexoes>3</num-conexoes>
         <time-mode>2</time-mode>
         <max-time>12</max-time>
         <port>12001</port>
         <output>OUTPUT-SNMP</output>
-    </ativas>
-</metrics>"""
+    </ativas>\n</metrics>"""
+    return schedule
 
+
+def save_schedule(sch_uuid, schedule):
     with open(f'/tmp/schedule-{sch_uuid}.xml', 'w+') as file:
         file.write(schedule)
+
+
+def create_rtt_schedule(sch_uuid: str, agent: str, manager_ip: str) -> None:
+    create_schedule(sch_uuid, agent, manager_ip, MetricType.RTT,
+                    probe_size=100, train_length=1, train_count=100, gap=120000)
+
+
+def create_loss_schedule(sch_uuid: str, agent: str, manager_ip: str) -> None:
+    create_schedule(sch_uuid, agent, manager_ip, MetricType.LOSS,
+                    probe_size=100, train_length=1, train_count=100, gap=120000)
+
+
+def create_throughput_tcp_schedule(sch_uuid: str, agent: str, manager_ip: str) -> None:
+    create_schedule(sch_uuid, agent, manager_ip, MetricType.THROUGHPUT_TCP,
+                    probe_size=14520, train_length=1440, train_count=1, gap=100000)
 
 
 def read_results_xml(metric: str, filename: str) -> list:
@@ -292,13 +314,13 @@ if __name__ == '__main__':
         signal.signal(signal.SIGINT, interruption_handler)
 
     if tp_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=("throughput_tcp", tp_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricType.THROUGHPUT_TCP, tp_period,))
         mes_thread.start()
 
     if rtt_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=("rtt", rtt_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricType.RTT, rtt_period,))
         mes_thread.start()
 
     if loss_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=("loss", loss_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricType.LOSS, loss_period,))
         mes_thread.start()
