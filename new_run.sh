@@ -45,7 +45,7 @@ do
 
     curl -X GET "http://$host:$port/bqoepath/pathtomanager-$hostname-$manager" -s
 
-    python3 run_test.py -m "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" &
+    ./run_test.py -m "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" &
     pid=$!
     echo $pid >> /tmp/pids_running.txt
     pids+=(pid)
