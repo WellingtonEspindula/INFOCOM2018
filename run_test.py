@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.9
 import abc
 import csv
-from abc import ABC
 from dataclasses import dataclass
 import os
 import sys
@@ -180,14 +179,18 @@ class Schedule:
     uuid: str = str(uuid.uuid4())
 
     def measure(self):
-        filename = "/tmp/schedule-{self.uuid}.xml"
+        filename = f"/tmp/schedule-{self.uuid}.xml"
         _command = f"{m} {agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
                    f"100 -u {self.uuid} "
+        #print(f"Measusre execution command: {_command}")
         os.system(_command)
         measurement_finish()
 
     def __create(self, agent_hostname: str, manager_ip: str, port: int = 12001) -> str:
-        plugins = "".join([f'<plugins>{plugin}</plugins>\n\t\t\t ' for plugin in self.metric.names]).rstrip()
+        plugins = "".join(
+            f'<plugins>{plugin}</plugins>\n\t\t\t ' for plugin in self.metric.names
+        ).rstrip()
+
         return f"""<metrics>
              <ativas>
                <agt-index>1090</agt-index>
