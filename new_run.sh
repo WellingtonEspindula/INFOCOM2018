@@ -14,6 +14,9 @@ sudo $m man2 /usr/netmetric/sbin/metricmanager &
 sudo $m man3 /usr/netmetric/sbin/metricmanager &
 sudo $m man4 /usr/netmetric/sbin/metricmanager &
 
+echo "Waiting to managers starts... 20s"
+sleep 20s
+
 pids=()
 
 trap ctrl_c INT
@@ -31,7 +34,7 @@ rm /tmp/pids_running.txt
 
 while read -r line;
 do
-  if [ ! -z "$line" ]; then
+  if [ -n "$line" ]; then
     hostname=$(echo "$line" | cut -d ';' -f 1) # First csv column
     manager=$(echo "$line" | cut -d ';' -f 2) # Second one
     #metric=$(echo "$line" | cut -d ';' -f 3) # Third one

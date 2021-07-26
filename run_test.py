@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.9
-
+import abc
 import csv
+from abc import ABC
 from dataclasses import dataclass
 import os
 import sys
@@ -18,6 +19,7 @@ from datetime import datetime
 from enum import Enum
 # from random import random as random
 import random as rand
+from xml.etree import ElementTree
 
 m = "/home/mininet/mininet/util/m"
 manager_procs = []
@@ -154,31 +156,6 @@ def calculate_ip(p) -> str:
             return f"10.0.0.{ipfinal}"
 
 
-def create_schedule(sch_uuid: str, agent: str, manager_ip: str, metric: Metric) -> None:
-    if metric is not None:
-        schedule = metric.create_schedule(agent=agent, manager_ip=manager_ip)
-        # print(schedule)
-        save_schedule(sch_uuid, schedule)
-    else:
-        print('metric cannot be None')
-
-
-def save_schedule(sch_uuid, schedule) -> None:
-    with open(f'/tmp/schedule-{sch_uuid}.xml', 'w+') as file:
-        file.write(schedule)
-
-
-def read_results_xml(metric: Metric, filename: str):
-    root = et.parse(filename).getroot()
-
-    if metric is not None:
-        for name in metric.names:
-            upload_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{name}\"]/upavg")
-            download_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{name}\"]/downavg")
-
-            return [name, upload_avg, download_avg]
-
-
 def parse_xml_text_if_exists(root, xpath):
     element = root.find(xpath)
     if element is not None:
@@ -194,11 +171,127 @@ def write_data_csv(filename: str, data: list) -> None:
         # print("File saved")
 
 
+@dataclass
+class Schedule:
+    agent_hostname: str
+    manager_hostname: str
+    metric: Metric
+    uuid: str = str(uuid.uuid4())
+
+    def measure(self):
+        filename = "/tmp/schedule-{self.uuid}.xml"
+        _command = f"{m} {agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
+                   f"100 -u {self.uuid} "
+        os.system(_command)
+        measurement_finish()
+
+    def __create(self, agent_hostname: str, manager_ip: str, port: int = 12001) -> str:
+        plugins = "".join([f'<plugins>{plugin}</plugins>\n\t\t\t ' for plugin in self.metric.names]).rstrip()
+        return f"""<metrics>
+             <ativas>
+               <agt-index>1090</agt-index>
+                <manager-ip>{manager_ip}</manager-ip>
+                <literal-addr>{agent_hostname}</literal-addr>
+                <android>1</android>
+                <location>
+                    <name>-</name>
+                    <city>-</city>
+                    <state>-</state>
+                </location>
+                {plugins}
+                <timeout>{self.metric.timeout}</timeout>
+                <probe-size>{self.metric.probe_size}</probe-size>
+                <train-len>{self.metric.train_length}</train-len>
+                <train-count>{self.metric.train_count}</train-count>
+                <gap-value>{self.metric.gap}</gap-value>
+                <protocol>{self.metric.protocol.value}</protocol>
+                <num-conexoes>{self.metric.connections}</num-conexoes>
+                <time-mode>{self.metric.time_mode}</time-mode>
+                <max-time>{self.metric.max_time}</max-time>
+                <port>{port}</port>
+                <output>OUTPUT-SNMP</output>
+            </ativas>\n</metrics>"""
+
+    @staticmethod
+    def __save(filename: str, schedule: str) -> bool:
+        with open(filename, 'w+') as file:
+            file.write(schedule)
+            return True
+
+    def create_and_save(self):
+        schedule_filename = f"/tmp/schedule-{self.uuid}.xml"
+        manager_ip = calculate_ip(self.manager_hostname)
+        schedule = self.__create(self.agent_hostname, manager_ip)
+        self.__save(schedule_filename, schedule)
+
+    def read_store_results(self) -> None:
+        filename = f"agent-{self.uuid}.xml"
+        root = ElementTree.parse(filename).getroot()
+
+        current_timestamp = str(datetime.now())
+        if self.metric is not None:
+            for name in self.metric.names:
+                upload_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/upavg", "")
+                download_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/downavg", "")
+
+                data = [
+                    self.agent_hostname,
+                    self.manager_hostname,
+                    current_timestamp,
+                    self.uuid,
+                    upload_avg,
+                    download_avg,
+                ]
+
+                self.store_result(filename, data)
+
+            shutil.move(f"agent-{self.uuid}.xml", f"./results/xml/agent-{self.uuid}.xml")
+
+    @staticmethod
+    def store_result(filename: str, data: list) -> bool:
+        with open(filename, mode='a+') as file:
+            file_writer = csv.writer(file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            file_writer.writerow(data)
+            return True
+
+    def __str__(self):
+        return f"Schedule [uuid={self.uuid}, metric={self.metric.names}]"
+
+
+_schedule_queue: list[Schedule] = list[Schedule]()
+_current_schedule: Schedule
+
+
+def enqueue_schedule(schedule: Schedule) -> None:
+    global _schedule_queue
+    _schedule_queue.append(schedule)
+
+
+def rotate() -> None:
+    global _current_schedule
+    global _schedule_queue
+    if _current_schedule is None:
+        _current_schedule = _schedule_queue.pop(0)
+        print(f"Queue: {_schedule_queue}")
+        _current_schedule.measure()
+        print(f"Running schedule {_current_schedule.uuid}")
+    else:
+        print("Couldn't execute current schedule since a measure is already running")
+
+
+def measurement_finish() -> None:
+    global _current_schedule
+    global _schedule_queue
+    _current_schedule.read_store_results()
+    _current_schedule = None
+    rotate()
+
+
 def measurement_service(metric: Metric, period_in_minutes: float):
     # First of all, must wait the first trigger time
-    # first_trigger_time = (3 + (random() % 29))
-    # print(f'Waiting for {first_trigger_time} s for stating this measure')
-    # time.sleep(first_trigger_time)
+    first_trigger_time = (3 + (random() % 29))
+    print(f'Waiting for {first_trigger_time} s for stating this measure')
+    time.sleep(first_trigger_time)
 
     # Keep waiting the given period (polling) and calls metricagent
     while True:
@@ -208,26 +301,30 @@ def measurement_service(metric: Metric, period_in_minutes: float):
         print(f"Manager IP={calculate_ip(manager_hostname)}")
 
         # Generate Schedule XML for this measure
-        create_schedule(sch_uuid, agent_hostname, calculate_ip(manager_hostname), metric)
+        schedule = Schedule(agent_hostname=agent_hostname, manager_hostname=manager_hostname, metric=metric)
+        schedule.create_and_save()
 
-        # Creates the metric agent command
-        command = f"{m} {agent_hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
-                  f"100 -u {sch_uuid} "
-        os.system(command)
+        enqueue_schedule(schedule)
+        # create_schedule(sch_uuid, agent_hostname, calculate_ip(manager_hostname), metric)
 
-        # Gather the data from metricagent xml output
-        current_timestamp = str(datetime.now())
-        data = [
-            agent_hostname,
-            manager_hostname,
-            current_timestamp,
-            sch_uuid,
-            *read_results_xml(metric, f"agent-{sch_uuid}.xml"),
-        ]
-
-        write_data_csv("results/nm_last_results.csv", data)
-        # Moves the XML file from results/xml folder
-        shutil.move(f"agent-{sch_uuid}.xml", f"./results/xml/agent-{sch_uuid}.xml")
+        # # Creates the metric agent command
+        # command = f"{m} {agent_hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
+        #           f"100 -u {sch_uuid} "
+        # os.system(command)
+        #
+        # # Gather the data from metricagent xml output
+        # current_timestamp = str(datetime.now())
+        # data = [
+        #     agent_hostname,
+        #     manager_hostname,
+        #     current_timestamp,
+        #     sch_uuid,
+        #     *read_results_xml(metric, f"agent-{sch_uuid}.xml"),
+        # ]
+        #
+        # write_data_csv("results/nm_last_results.csv", data)
+        # # Moves the XML file from results/xml folder
+        # shutil.move(f"agent-{sch_uuid}.xml", f"./results/xml/agent-{sch_uuid}.xml")
 
         time.sleep(period_in_minutes)
 
