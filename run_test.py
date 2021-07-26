@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.9
 
 import csv
 from dataclasses import dataclass
 import os
 import sys
+import re
 import shutil
 import signal
 import subprocess
@@ -27,13 +28,10 @@ class Protocol(Enum):
     TCP = 1
 
 
-# Metric = namedtuple('Metric', ['name', 'probe_size', 'train_length', 'train_count', 'gap',
-#                                'protocol', 'connections', 'time_mode', 'max_time'])
-
 @dataclass
 class Metric:
     """ Class for managing a Metric with its attributes"""
-    name: str
+    names: list[str]
     timeout: int
     probe_size: int
     train_length: int
@@ -45,9 +43,10 @@ class Metric:
     max_time: int
 
     def create_schedule(self, agent: str, manager_ip: str, port: int = 12001) -> str:
+        plugins = "".join([f'<plugins>{plugin}</plugins>\n\t\t\t ' for plugin in self.names]).rstrip()
         return f"""<metrics>
           <ativas>
-             <agt-index>1090</agt-index>
+            <agt-index>1090</agt-index>
              <manager-ip>{manager_ip}</manager-ip>
              <literal-addr>{agent}</literal-addr>
              <android>1</android>
@@ -56,13 +55,13 @@ class Metric:
                  <city>-</city>
                  <state>-</state>
              </location>
-             <plugins>{self.name}</plugins>
+             {plugins}
              <timeout>{self.timeout}</timeout>
              <probe-size>{self.probe_size}</probe-size>
              <train-len>{self.train_length}</train-len>
              <train-count>{self.train_count}</train-count>
              <gap-value>{self.gap}</gap-value>
-             <protocol>{self.protocol}</protocol>
+             <protocol>{self.protocol.value}</protocol>
              <num-conexoes>{self.connections}</num-conexoes>
              <time-mode>{self.time_mode}</time-mode>
              <max-time>{self.max_time}</max-time>
@@ -72,11 +71,13 @@ class Metric:
 
 
 class MetricTypes(Enum):
-    RTT = Metric(name="rtt", timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
+    RTT = Metric(names=["rtt"], timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
                  protocol=Protocol.UDP, connections=1, time_mode=0, max_time=0)
-    LOSS = Metric("loss", timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
+    LOSS = Metric(names=["loss"], timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
                   protocol=Protocol.UDP, connections=1, time_mode=0, max_time=0)
-    THROUGHPUT_TCP = Metric("throughput_tcp", timeout=12, probe_size=14520, train_length=1440, train_count=1,
+    UDP_PACK = Metric(names=["rtt", "loss"], timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
+                      protocol=Protocol.UDP, connections=1, time_mode=0, max_time=0)
+    THROUGHPUT_TCP = Metric(names=["throughput_tcp"], timeout=12, probe_size=14520, train_length=1440, train_count=1,
                             gap=100000, protocol=Protocol.TCP, connections=3, time_mode=2, max_time=12)
 
 
@@ -156,6 +157,7 @@ def calculate_ip(p) -> str:
 def create_schedule(sch_uuid: str, agent: str, manager_ip: str, metric: Metric) -> None:
     if metric is not None:
         schedule = metric.create_schedule(agent=agent, manager_ip=manager_ip)
+        # print(schedule)
         save_schedule(sch_uuid, schedule)
     else:
         print('metric cannot be None')
@@ -170,10 +172,11 @@ def read_results_xml(metric: Metric, filename: str):
     root = et.parse(filename).getroot()
 
     if metric is not None:
-        upload_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{metric.name}\"]/upavg")
-        download_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{metric.name}\"]/downavg")
+        for name in metric.names:
+            upload_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{name}\"]/upavg")
+            download_avg = parse_xml_text_if_exists(root, f"./ativas[@=\"{name}\"]/downavg")
 
-        return [metric.name, upload_avg, download_avg]
+            return [name, upload_avg, download_avg]
 
 
 def parse_xml_text_if_exists(root, xpath):
@@ -193,9 +196,9 @@ def write_data_csv(filename: str, data: list) -> None:
 
 def measurement_service(metric: Metric, period_in_minutes: float):
     # First of all, must wait the first trigger time
-    first_trigger_time = (3 + (random() % 29))
-    print(f'Waiting for {first_trigger_time} s for stating this measure')
-    time.sleep(first_trigger_time)
+    # first_trigger_time = (3 + (random() % 29))
+    # print(f'Waiting for {first_trigger_time} s for stating this measure')
+    # time.sleep(first_trigger_time)
 
     # Keep waiting the given period (polling) and calls metricagent
     while True:
@@ -313,3 +316,8 @@ if __name__ == '__main__':
     if loss_period > 0:
         mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS.value, loss_period,))
         mes_thread.start()
+
+    # Test zone
+    # manager_hostname = "man1"
+    # agent_hostname = "u001"
+    # measurement_service(MetricTypes.RTT.value, 0.5)
