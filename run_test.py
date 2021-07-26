@@ -40,33 +40,6 @@ class Metric:
     time_mode: int
     max_time: int
 
-    def create_schedule(self, agent: str, manager_ip: str, port: int = 12001) -> str:
-        plugins = "".join([f'<plugins>{plugin}</plugins>\n\t\t\t ' for plugin in self.names]).rstrip()
-        return f"""<metrics>
-          <ativas>
-            <agt-index>1090</agt-index>
-             <manager-ip>{manager_ip}</manager-ip>
-             <literal-addr>{agent}</literal-addr>
-             <android>1</android>
-             <location>
-                 <name>-</name>
-                 <city>-</city>
-                 <state>-</state>
-             </location>
-             {plugins}
-             <timeout>{self.timeout}</timeout>
-             <probe-size>{self.probe_size}</probe-size>
-             <train-len>{self.train_length}</train-len>
-             <train-count>{self.train_count}</train-count>
-             <gap-value>{self.gap}</gap-value>
-             <protocol>{self.protocol.value}</protocol>
-             <num-conexoes>{self.connections}</num-conexoes>
-             <time-mode>{self.time_mode}</time-mode>
-             <max-time>{self.max_time}</max-time>
-             <port>{port}</port>
-             <output>OUTPUT-SNMP</output>
-         </ativas>\n</metrics>"""
-
 
 class MetricTypes(Enum):
     RTT = Metric(names=["rtt"], timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
@@ -169,22 +142,22 @@ def write_data_csv(filename: str, data: list) -> None:
 
 @dataclass
 class Schedule:
-    agent_hostname: str
-    manager_hostname: str
-    metric: Metric
-    uuid: str = str(uuid.uuid4())
+    __agent_hostname: str
+    __manager_hostname: str
+    __metric: Metric
+    __uuid: str = str(uuid.uuid4())
 
     def measure(self):
-        filename = f"/tmp/schedule-{self.uuid}.xml"
-        _command = f"{m} {agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
-                   f"100 -u {self.uuid} "
+        filename = f"/tmp/schedule-{self.__uuid}.xml"
+        _command = f"{m} {self.__agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
+                   f"100 -u {self.__uuid} "
         os.system(_command)
         self.read_store_results()
         measurement_finish()
 
     def __create(self, agent_hostname: str, manager_ip: str, port: int = 12001) -> str:
         plugins = "".join(
-            f'<plugins>{plugin}</plugins>\n\t\t\t ' for plugin in self.metric.names
+            f'<plugins>{plugin}</plugins>\n\t\t\t ' for plugin in self.__metric.names
         ).rstrip()
 
         return f"""<metrics>
@@ -199,15 +172,15 @@ class Schedule:
                     <state>-</state>
                 </location>
                 {plugins}
-                <timeout>{self.metric.timeout}</timeout>
-                <probe-size>{self.metric.probe_size}</probe-size>
-                <train-len>{self.metric.train_length}</train-len>
-                <train-count>{self.metric.train_count}</train-count>
-                <gap-value>{self.metric.gap}</gap-value>
-                <protocol>{self.metric.protocol.value}</protocol>
-                <num-conexoes>{self.metric.connections}</num-conexoes>
-                <time-mode>{self.metric.time_mode}</time-mode>
-                <max-time>{self.metric.max_time}</max-time>
+                <timeout>{self.__metric.timeout}</timeout>
+                <probe-size>{self.__metric.probe_size}</probe-size>
+                <train-len>{self.__metric.train_length}</train-len>
+                <train-count>{self.__metric.train_count}</train-count>
+                <gap-value>{self.__metric.gap}</gap-value>
+                <protocol>{self.__metric.protocol.value}</protocol>
+                <num-conexoes>{self.__metric.connections}</num-conexoes>
+                <time-mode>{self.__metric.time_mode}</time-mode>
+                <max-time>{self.__metric.max_time}</max-time>
                 <port>{port}</port>
                 <output>OUTPUT-SNMP</output>
             </ativas>\n</metrics>"""
@@ -219,26 +192,26 @@ class Schedule:
             return True
 
     def create_and_save(self):
-        schedule_filename = f"/tmp/schedule-{self.uuid}.xml"
-        manager_ip = calculate_ip(self.manager_hostname)
-        schedule = self.__create(self.agent_hostname, manager_ip)
+        schedule_filename = f"/tmp/schedule-{self.__uuid}.xml"
+        manager_ip = calculate_ip(self.__manager_hostname)
+        schedule = self.__create(self.__agent_hostname, manager_ip)
         self.__save(schedule_filename, schedule)
 
     def read_store_results(self) -> None:
-        filename = f"agent-{self.uuid}.xml"
+        filename = f"agent-{self.__uuid}.xml"
         root = ElementTree.parse(filename).getroot()
 
         current_timestamp = str(datetime.now())
-        if self.metric is not None:
-            for name in self.metric.names:
+        if self.__metric is not None:
+            for name in self.__metric.names:
                 upload_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/upavg", "")
                 download_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/downavg", "")
 
                 data = [
-                    self.agent_hostname,
-                    self.manager_hostname,
+                    self.__agent_hostname,
+                    self.__manager_hostname,
                     current_timestamp,
-                    self.uuid,
+                    self.__uuid,
                     name,
                     upload_avg,
                     download_avg,
@@ -246,7 +219,7 @@ class Schedule:
 
                 self.store_result("results/nm_last_results.csv", data)
 
-            shutil.move(f"agent-{self.uuid}.xml", f"./results/xml/agent-{self.uuid}.xml")
+            shutil.move(f"agent-{self.__uuid}.xml", f"./results/xml/agent-{self.__uuid}.xml")
 
     @staticmethod
     def store_result(filename: str, data: list) -> bool:
@@ -256,7 +229,7 @@ class Schedule:
             return True
 
     def __str__(self):
-        return f"Schedule [uuid={self.uuid}, metric={self.metric.names}]"
+        return f"Schedule [uuid={self.__uuid}, metric={self.__metric.names}]"
 
 
 _schedule_queue: list[Schedule] = list[Schedule]()
@@ -276,7 +249,7 @@ def rotate() -> None:
     if _current_schedule is None:
         if _schedule_queue:
             _current_schedule = _schedule_queue.pop(0)
-            print(f"Queue: {_schedule_queue}, Current Schedule = {_current_schedule.uuid}")
+            print(f"Queue: {_schedule_queue}, Current Schedule = {_current_schedule}")
             _current_schedule.measure()
         else:
             print("No schedules on queue!")
@@ -300,10 +273,8 @@ def measurement_service(metric: Metric, period_in_minutes: float):
 
     # Keep waiting the given period (polling) and calls metricagent
     while True:
-        # Generate Schedule XML for this measure
-        schedule = Schedule(agent_hostname=agent_hostname, manager_hostname=manager_hostname, metric=metric)
+        schedule = Schedule(__agent_hostname=agent_hostname, __manager_hostname=manager_hostname, __metric=metric)
         schedule.create_and_save()
-
         enqueue_schedule(schedule)
 
         time.sleep(period_in_minutes)
