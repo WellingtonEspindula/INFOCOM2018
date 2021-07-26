@@ -150,10 +150,10 @@ def evaluate_topology():
     link_switch_to_host(net, ext1, s34, 0, 99, False, link1_gbps_30)
 
     # 1.2. CREATING LINKS
-    link_switch_to_host(net, man1, s30, 0, 90, False, link100_mbps_1)
+    link_switch_to_host(net, man1, s30, 0, 90, False, link1_gbps_1)
     link_switch_to_host(net, man2, s31, 0, 90, False, link1_gbps_1)
     link_switch_to_host(net, man3, s32, 0, 90, False, link1_gbps_1)
-    link_switch_to_host(net, man4, s33, 0, 90, False, link1_gbps_30)
+    link_switch_to_host(net, man4, s33, 0, 90, False, link1_gbps_1)
 
     # 2.   SWITCH PROCESSING
     # 2.1. CREATING HOSTS

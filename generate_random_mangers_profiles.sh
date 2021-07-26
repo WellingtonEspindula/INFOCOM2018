@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 echo "agent;manager;first-trigger-time;polling-throughput-tcp;polling-rtt;polling-loss"
 for i in {001..010}; do
@@ -12,5 +12,6 @@ for i in {001..010}; do
 	#random_loss="$(($RANDOM % 3)).$(($RANDOM % 60))"
 	random_loss=$random_rtt
 
-	echo "u$i;man$random_manager;1;$random_tp;$random_rtt;$random_loss"
+	#echo "u$i;man$random_manager;1;$random_tp;$random_rtt;$random_loss"
+	echo "u$i;man$random_manager;1;$random_tp;$random_rtt;-1"
 done

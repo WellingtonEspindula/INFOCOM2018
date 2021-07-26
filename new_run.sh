@@ -29,20 +29,22 @@ function cntrl_c() {
 
 rm /tmp/pids_running.txt
 
-while read -r line
+while read -r line;
 do
-  hostname=$(echo "$line" | cut -d ';' -f 1) # First csv column
-  manager=$(echo "$line" | cut -d ';' -f 2) # Second one
-  #metric=$(echo "$line" | cut -d ';' -f 3) # Third one
-  #polling_time=$(echo "$line" | cut -d ';' -f 4) # ...
-  polling_tp=$(echo "$line" | cut -d ';' -f 4) # ...
-  polling_rtt=$(echo "$line" | cut -d ';' -f 5) # ...
-  polling_loss=$(echo "$line" | cut -d ';' -f 6) # ...
+  if [ ! -z "$line" ]; then
+    hostname=$(echo "$line" | cut -d ';' -f 1) # First csv column
+    manager=$(echo "$line" | cut -d ';' -f 2) # Second one
+    #metric=$(echo "$line" | cut -d ';' -f 3) # Third one
+    #polling_time=$(echo "$line" | cut -d ';' -f 4) # ...
+    polling_tp=$(echo "$line" | cut -d ';' -f 4) # ...
+    polling_rtt=$(echo "$line" | cut -d ';' -f 5) # ...
+    polling_loss=$(echo "$line" | cut -d ';' -f 6) # ...
 
-  curl -X GET "http://$host:$port/bqoepath/pathtomanager-$hostname-$manager" -s
+    curl -X GET "http://$host:$port/bqoepath/pathtomanager-$hostname-$manager" -s
 
-  python3 run_test.py -m "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" &
-  pid=$!
-  echo $pid >> /tmp/pids_running.txt
-  pids+=(pid)
+    python3 run_test.py -m "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" &
+    pid=$!
+    echo $pid >> /tmp/pids_running.txt
+    pids+=(pid)
+  fi
 done < <(tail -n +2 measuring_profile.csv)

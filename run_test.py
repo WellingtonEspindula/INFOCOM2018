@@ -1,6 +1,7 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import csv
+from dataclasses import dataclass
 import os
 import sys
 import shutil
@@ -10,6 +11,7 @@ import time
 import uuid
 import threading
 import xml.etree.ElementTree as et
+from collections import namedtuple
 from argparse import ArgumentParser
 from datetime import datetime
 from enum import Enum
@@ -20,10 +22,62 @@ m = "/home/mininet/mininet/util/m"
 manager_procs = []
 
 
-class MetricType(Enum):
-    RTT = "rtt"
-    LOSS = "loss"
-    THROUGHPUT_TCP = "throughput_tcp"
+class Protocol(Enum):
+    UDP = 0
+    TCP = 1
+
+
+# Metric = namedtuple('Metric', ['name', 'probe_size', 'train_length', 'train_count', 'gap',
+#                                'protocol', 'connections', 'time_mode', 'max_time'])
+
+@dataclass
+class Metric:
+    """ Class for managing a Metric with its attributes"""
+    name: str
+    timeout: int
+    probe_size: int
+    train_length: int
+    train_count: int
+    gap: int
+    protocol: Protocol
+    connections: int
+    time_mode: int
+    max_time: int
+
+    def create_schedule(self, agent: str, manager_ip: str, port: int = 12001) -> str:
+        return f"""<metrics>
+          <ativas>
+             <agt-index>1090</agt-index>
+             <manager-ip>{manager_ip}</manager-ip>
+             <literal-addr>{agent}</literal-addr>
+             <android>1</android>
+             <location>
+                 <name>-</name>
+                 <city>-</city>
+                 <state>-</state>
+             </location>
+             <plugins>{self.name}</plugins>
+             <timeout>{self.timeout}</timeout>
+             <probe-size>{self.probe_size}</probe-size>
+             <train-len>{self.train_length}</train-len>
+             <train-count>{self.train_count}</train-count>
+             <gap-value>{self.gap}</gap-value>
+             <protocol>{self.protocol}</protocol>
+             <num-conexoes>{self.connections}</num-conexoes>
+             <time-mode>{self.time_mode}</time-mode>
+             <max-time>{self.max_time}</max-time>
+             <port>{port}</port>
+             <output>OUTPUT-SNMP</output>
+         </ativas>\n</metrics>"""
+
+
+class MetricTypes(Enum):
+    RTT = Metric(name="rtt", timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
+                 protocol=Protocol.UDP, connections=1, time_mode=0, max_time=0)
+    LOSS = Metric("loss", timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
+                  protocol=Protocol.UDP, connections=1, time_mode=0, max_time=0)
+    THROUGHPUT_TCP = Metric("throughput_tcp", timeout=12, probe_size=14520, train_length=1440, train_count=1,
+                            gap=100000, protocol=Protocol.TCP, connections=3, time_mode=2, max_time=12)
 
 
 def random():
@@ -99,92 +153,27 @@ def calculate_ip(p) -> str:
             return f"10.0.0.{ipfinal}"
 
 
-def create_schedule(sch_uuid: str, agent: str, manager_ip: str, metric: MetricType,
-                    probe_size: int, train_length: int, train_count: int, gap: int, timeout: int = 12) -> None:
-    has_tp = metric == MetricType.THROUGHPUT_TCP
-    has_rtt = metric == MetricType.RTT
-    has_loss = metric == MetricType.LOSS
-
-    schedule = generate_schedule_body(agent, gap, has_loss, has_rtt, has_tp, manager_ip, probe_size, timeout,
-                                      train_count, train_length)
-
-    save_schedule(sch_uuid, schedule)
+def create_schedule(sch_uuid: str, agent: str, manager_ip: str, metric: MetricTypes) -> None:
+    if metric is not None:
+        schedule = metric.create_schedule(agent=agent, manager_ip=manager_ip)
+        save_schedule(sch_uuid, schedule)
+    else:
+        print('metric cannot be None')
 
 
-def generate_schedule_body(agent, gap, has_loss, has_rtt, has_tp, manager_ip, probe_size, timeout, train_count,
-                           train_length):
-    tp = "<plugins>throughput_tcp</plugins>\n" if has_tp else ""
-    rtt = "<plugins>rtt</plugins>\n" if has_rtt else ""
-    loss = "<plugins>loss</plugins>\n" if has_loss else ""
-    schedule = f"""<metrics>
-    <ativas>
-        <agt-index>1090</agt-index>
-        <manager-ip>{manager_ip}</manager-ip>
-        <literal-addr>{agent}</literal-addr>
-        <android>1</android>
-        <location>
-            <name>-</name>
-            <city>-</city>
-            <state>-</state>
-        </location>
-        {tp}{rtt}{loss}
-        <timeout>{timeout}</timeout>
-        <probe-size>{probe_size}</probe-size>
-        <train-len>{train_length}</train-len>
-        <train-count>{train_count}</train-count>
-        <gap-value>{gap}</gap-value>
-        <protocol>1</protocol>
-        <num-conexoes>3</num-conexoes>
-        <time-mode>2</time-mode>
-        <max-time>12</max-time>
-        <port>12001</port>
-        <output>OUTPUT-SNMP</output>
-    </ativas>\n</metrics>"""
-    return schedule
-
-
-def save_schedule(sch_uuid, schedule):
+def save_schedule(sch_uuid, schedule) -> None:
     with open(f'/tmp/schedule-{sch_uuid}.xml', 'w+') as file:
         file.write(schedule)
 
 
-def create_rtt_schedule(sch_uuid: str, agent: str, manager_ip: str) -> None:
-    create_schedule(sch_uuid, agent, manager_ip, MetricType.RTT,
-                    probe_size=100, train_length=1, train_count=100, gap=120000)
-
-
-def create_loss_schedule(sch_uuid: str, agent: str, manager_ip: str) -> None:
-    create_schedule(sch_uuid, agent, manager_ip, MetricType.LOSS,
-                    probe_size=100, train_length=1, train_count=100, gap=120000)
-
-
-def create_throughput_tcp_schedule(sch_uuid: str, agent: str, manager_ip: str) -> None:
-    create_schedule(sch_uuid, agent, manager_ip, MetricType.THROUGHPUT_TCP,
-                    probe_size=14520, train_length=1440, train_count=1, gap=100000)
-
-
-def read_results_xml(metric: str, filename: str) -> list:
+def read_results_xml(metric: MetricTypes, filename: str):
     root = et.parse(filename).getroot()
 
-    if metric == 'throughput_tcp':
-        throughput_tcp_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/upavg")
-        throughput_tcp_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"throughput_tcp\"]/downavg")
+    if metric is not None:
+        upload_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{metric.name}\"]/upavg")
+        download_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{metric.name}\"]/downavg")
 
-        return [metric, throughput_tcp_upload_avg, throughput_tcp_download_avg]
-
-    elif metric == 'rtt':
-        rtt_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"rtt\"]/upavg")
-        rtt_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"rtt\"]/downavg")
-
-        return [metric, rtt_upload_avg, rtt_download_avg]
-
-    elif metric == 'loss':
-        loss_upload_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"loss\"]/upavg")
-        loss_download_avg = parse_xml_text_if_exists(root, "./ativas[@metrica=\"loss\"]/downavg")
-
-        return [metric, loss_upload_avg, loss_download_avg]
-    # return [throughput_tcp_upload_avg, throughput_tcp_download_avg, rtt_upload_avg, rtt_download_avg,
-    #         loss_upload_avg, loss_download_avg]
+        return [metric.name, upload_avg, download_avg]
 
 
 def parse_xml_text_if_exists(root, xpath):
@@ -195,14 +184,14 @@ def parse_xml_text_if_exists(root, xpath):
         return ""
 
 
-def write_data_csv(filename, data):
+def write_data_csv(filename: str, data: list) -> None:
     with open(filename, mode='a+') as file:
         file_writer = csv.writer(file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         file_writer.writerow(data)
         # print("File saved")
 
 
-def measurement_service(metric, period):
+def measurement_service(metric: MetricTypes, period_in_minutes: float):
     # First of all, must wait the first trigger time
     first_trigger_time = (3 + (random() % 29))
     print(f'Waiting for {first_trigger_time} s for stating this measure')
@@ -237,7 +226,7 @@ def measurement_service(metric, period):
         # Moves the XML file from results/xml folder
         shutil.move(f"agent-{sch_uuid}.xml", f"./results/xml/agent-{sch_uuid}.xml")
 
-        time.sleep(period)
+        time.sleep(period_in_minutes)
 
 
 def is_manager_busy(manager: str):
@@ -314,13 +303,13 @@ if __name__ == '__main__':
         signal.signal(signal.SIGINT, interruption_handler)
 
     if tp_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricType.THROUGHPUT_TCP, tp_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.THROUGHPUT_TCP, tp_period,))
         mes_thread.start()
 
     if rtt_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricType.RTT, rtt_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.RTT, rtt_period,))
         mes_thread.start()
 
     if loss_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricType.LOSS, loss_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS, loss_period,))
         mes_thread.start()
