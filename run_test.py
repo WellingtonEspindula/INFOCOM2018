@@ -153,7 +153,7 @@ def calculate_ip(p) -> str:
             return f"10.0.0.{ipfinal}"
 
 
-def create_schedule(sch_uuid: str, agent: str, manager_ip: str, metric: MetricTypes) -> None:
+def create_schedule(sch_uuid: str, agent: str, manager_ip: str, metric: Metric) -> None:
     if metric is not None:
         schedule = metric.create_schedule(agent=agent, manager_ip=manager_ip)
         save_schedule(sch_uuid, schedule)
@@ -166,7 +166,7 @@ def save_schedule(sch_uuid, schedule) -> None:
         file.write(schedule)
 
 
-def read_results_xml(metric: MetricTypes, filename: str):
+def read_results_xml(metric: Metric, filename: str):
     root = et.parse(filename).getroot()
 
     if metric is not None:
@@ -191,7 +191,7 @@ def write_data_csv(filename: str, data: list) -> None:
         # print("File saved")
 
 
-def measurement_service(metric: MetricTypes, period_in_minutes: float):
+def measurement_service(metric: Metric, period_in_minutes: float):
     # First of all, must wait the first trigger time
     first_trigger_time = (3 + (random() % 29))
     print(f'Waiting for {first_trigger_time} s for stating this measure')
@@ -303,13 +303,13 @@ if __name__ == '__main__':
         signal.signal(signal.SIGINT, interruption_handler)
 
     if tp_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.THROUGHPUT_TCP, tp_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.THROUGHPUT_TCP.value, tp_period,))
         mes_thread.start()
 
     if rtt_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.RTT, rtt_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.RTT.value, rtt_period,))
         mes_thread.start()
 
     if loss_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS, loss_period,))
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS.value, loss_period,))
         mes_thread.start()
