@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 m="/home/mininet/mininet/util/m"
 
