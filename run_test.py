@@ -19,6 +19,7 @@ from datetime import datetime
 from enum import Enum
 # from random import random as random
 import random as rand
+from typing import Optional
 from xml.etree import ElementTree
 
 m = "/home/mininet/mininet/util/m"
@@ -259,12 +260,13 @@ class Schedule:
 
 
 _schedule_queue: list[Schedule] = list[Schedule]()
-_current_schedule: Schedule
+_current_schedule: Optional[Schedule] = None
 
 
 def enqueue_schedule(schedule: Schedule) -> None:
     global _schedule_queue
     _schedule_queue.append(schedule)
+    rotate()
 
 
 def rotate() -> None:
