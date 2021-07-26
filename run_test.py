@@ -1,24 +1,19 @@
 #!/usr/bin/env python3.9
-import abc
+
 import csv
-from abc import ABC
-from dataclasses import dataclass
 import os
-import sys
-import re
+import random as rand
 import shutil
 import signal
 import subprocess
+import sys
+import threading
 import time
 import uuid
-import threading
-import xml.etree.ElementTree as et
-from collections import namedtuple
 from argparse import ArgumentParser
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-# from random import random as random
-import random as rand
 from typing import Optional
 from xml.etree import ElementTree
 
@@ -244,6 +239,7 @@ class Schedule:
                     self.manager_hostname,
                     current_timestamp,
                     self.uuid,
+                    name,
                     upload_avg,
                     download_avg,
                 ]
