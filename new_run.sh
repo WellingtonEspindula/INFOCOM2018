@@ -16,6 +16,7 @@ sudo $m man4 /usr/netmetric/sbin/metricmanager &
 
 echo "Waiting to managers starts... 20s"
 sleep 20s
+echo "Managers are ready to execute!"
 
 pids=()
 
