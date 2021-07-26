@@ -11,7 +11,6 @@ import subprocess
 import time
 import uuid
 import threading
-import xml.etree.ElementTree as et
 from collections import namedtuple
 from argparse import ArgumentParser
 from datetime import datetime
@@ -184,6 +183,7 @@ class Schedule:
                    f"100 -u {self.uuid} "
         #print(f"Measusre execution command: {_command}")
         os.system(_command)
+        self.read_store_results()
         measurement_finish()
 
     def __create(self, agent_hostname: str, manager_ip: str, port: int = 12001) -> str:
@@ -247,7 +247,7 @@ class Schedule:
                     download_avg,
                 ]
 
-                self.store_result(filename, data)
+                self.store_result("results/nm_last_results.csv", data)
 
             shutil.move(f"agent-{self.uuid}.xml", f"./results/xml/agent-{self.uuid}.xml")
 
@@ -277,9 +277,12 @@ def rotate() -> None:
     global _current_schedule
     global _schedule_queue
     if _current_schedule is None:
-        _current_schedule = _schedule_queue.pop(0)
-        print(f"Queue: {_schedule_queue}, Current Schedule = {_current_schedule.uuid}")
-        _current_schedule.measure()
+        if _schedule_queue:
+            _current_schedule = _schedule_queue.pop(0)
+            print(f"Queue: {_schedule_queue}, Current Schedule = {_current_schedule.uuid}")
+            _current_schedule.measure()
+        else:
+            print("No schedules on queue!")
     else:
         print("Couldn't execute current schedule since a measure is already running")
 
@@ -288,7 +291,6 @@ def measurement_finish() -> None:
     global _current_schedule
     global _schedule_queue
     print("Measure Finished!")
-    _current_schedule.read_store_results()
     _current_schedule = None
     rotate()
 
@@ -302,9 +304,9 @@ def measurement_service(metric: Metric, period_in_minutes: float):
     # Keep waiting the given period (polling) and calls metricagent
     while True:
         # Generate Schedule's UUID
-        sch_uuid = str(uuid.uuid4())
-        print(f"This measure is identified by uuid={sch_uuid}")
-        print(f"Manager IP={calculate_ip(manager_hostname)}")
+        #sch_uuid = str(uuid.uuid4())
+        #print(f"This measure is identified by uuid={sch_uuid}")
+        #print(f"Manager IP={calculate_ip(manager_hostname)}")
 
         # Generate Schedule XML for this measure
         schedule = Schedule(agent_hostname=agent_hostname, manager_hostname=manager_hostname, metric=metric)
