@@ -174,7 +174,7 @@ def read_results_xml(metric: Metric, filename: str):
     if metric is not None:
         for name in metric.names:
             upload_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{name}\"]/upavg")
-            download_avg = parse_xml_text_if_exists(root, f"./ativas[@=\"{name}\"]/downavg")
+            download_avg = parse_xml_text_if_exists(root, f"./ativas[@metrica=\"{name}\"]/downavg")
 
             return [name, upload_avg, download_avg]
 
