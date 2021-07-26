@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.9
 import abc
 import csv
+from abc import ABC
 from dataclasses import dataclass
 import os
 import sys
@@ -11,6 +12,7 @@ import subprocess
 import time
 import uuid
 import threading
+import xml.etree.ElementTree as et
 from collections import namedtuple
 from argparse import ArgumentParser
 from datetime import datetime
@@ -181,7 +183,6 @@ class Schedule:
         filename = f"/tmp/schedule-{self.uuid}.xml"
         _command = f"{m} {agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
                    f"100 -u {self.uuid} "
-        #print(f"Measusre execution command: {_command}")
         os.system(_command)
         self.read_store_results()
         measurement_finish()
@@ -303,36 +304,11 @@ def measurement_service(metric: Metric, period_in_minutes: float):
 
     # Keep waiting the given period (polling) and calls metricagent
     while True:
-        # Generate Schedule's UUID
-        #sch_uuid = str(uuid.uuid4())
-        #print(f"This measure is identified by uuid={sch_uuid}")
-        #print(f"Manager IP={calculate_ip(manager_hostname)}")
-
         # Generate Schedule XML for this measure
         schedule = Schedule(agent_hostname=agent_hostname, manager_hostname=manager_hostname, metric=metric)
         schedule.create_and_save()
 
         enqueue_schedule(schedule)
-        # create_schedule(sch_uuid, agent_hostname, calculate_ip(manager_hostname), metric)
-
-        # # Creates the metric agent command
-        # command = f"{m} {agent_hostname} /usr/netmetric/sbin/metricagent -c -f /tmp/schedule-{sch_uuid}.xml -w -l 1000 -u " \
-        #           f"100 -u {sch_uuid} "
-        # os.system(command)
-        #
-        # # Gather the data from metricagent xml output
-        # current_timestamp = str(datetime.now())
-        # data = [
-        #     agent_hostname,
-        #     manager_hostname,
-        #     current_timestamp,
-        #     sch_uuid,
-        #     *read_results_xml(metric, f"agent-{sch_uuid}.xml"),
-        # ]
-        #
-        # write_data_csv("results/nm_last_results.csv", data)
-        # # Moves the XML file from results/xml folder
-        # shutil.move(f"agent-{sch_uuid}.xml", f"./results/xml/agent-{sch_uuid}.xml")
 
         time.sleep(period_in_minutes)
 
@@ -414,13 +390,17 @@ if __name__ == '__main__':
         mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.THROUGHPUT_TCP.value, tp_period,))
         mes_thread.start()
 
-    if rtt_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.RTT.value, rtt_period,))
+    if rtt_period == loss_period and rtt_period > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.UDP_PACK.value, rtt_period,))
         mes_thread.start()
+    else:
+        if rtt_period > 0:
+            mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.RTT.value, rtt_period,))
+            mes_thread.start()
 
-    if loss_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS.value, loss_period,))
-        mes_thread.start()
+        if loss_period > 0:
+            mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS.value, loss_period,))
+            mes_thread.start()
 
     # Test zone
     # manager_hostname = "man1"
