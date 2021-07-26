@@ -265,6 +265,7 @@ _current_schedule: Optional[Schedule] = None
 
 def enqueue_schedule(schedule: Schedule) -> None:
     global _schedule_queue
+    print("Enqueue Schedule!")
     _schedule_queue.append(schedule)
     rotate()
 
@@ -274,9 +275,8 @@ def rotate() -> None:
     global _schedule_queue
     if _current_schedule is None:
         _current_schedule = _schedule_queue.pop(0)
-        print(f"Queue: {_schedule_queue}")
+        print(f"Queue: {_schedule_queue}, Current Schedule = {_current_schedule.uuid}")
         _current_schedule.measure()
-        print(f"Running schedule {_current_schedule.uuid}")
     else:
         print("Couldn't execute current schedule since a measure is already running")
 
@@ -284,6 +284,7 @@ def rotate() -> None:
 def measurement_finish() -> None:
     global _current_schedule
     global _schedule_queue
+    print("Measure Finished!")
     _current_schedule.read_store_results()
     _current_schedule = None
     rotate()
