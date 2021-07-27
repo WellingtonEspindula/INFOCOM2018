@@ -71,28 +71,26 @@ def evaluate_topology():
 
     net.addController('c0', RemoteController, ip="127.0.0.1", port=6633)
 
-    link100_mbps = {'bw': 20, 'delay': '15ms'}
-    link1_gbps = {'bw': 200, 'delay': '5ms'}
     linknodeg = {}
 
-    link100_mbps_1 = {'bw': 20, 'delay': '1ms'}
+    link100_mbps_0_5 = {'bw': 20, 'delay': '0.5ms'}
+    link100_mbps_2 = {'bw': 20, 'delay': '2ms'}
+    link100_mbps_2_5 = {'bw': 20, 'delay': '2.5ms'}
+    link100_mbps_3 = {'bw': 20, 'delay': '3ms'}
+    link100_mbps_3_5 = {'bw': 20, 'delay': '3.5ms'}
     link100_mbps_4 = {'bw': 20, 'delay': '4ms'}
+    link100_mbps_4_5 = {'bw': 20, 'delay': '4.5ms'}
     link100_mbps_5 = {'bw': 20, 'delay': '5ms'}
-    link100_mbps_6 = {'bw': 20, 'delay': '6ms'}
-    link100_mbps_7 = {'bw': 20, 'delay': '7ms'}
-    link100_mbps_8 = {'bw': 20, 'delay': '8ms'}
-    link100_mbps_9 = {'bw': 20, 'delay': '9ms'}
-    link100_mbps_10 = {'bw': 20, 'delay': '10ms'}
-    link100_mbps_11 = {'bw': 20, 'delay': '11ms'}
+    link100_mbps_5_5 = {'bw': 20, 'delay': '5.5ms'}
 
-    link1_gbps_1 = {'bw': 200, 'delay': '1ms'}
-    link1_gbps_12 = {'bw': 200, 'delay': '12ms'}
+    link1_gbps_0_5 = {'bw': 200, 'delay': '0.5ms'}
+    link1_gbps_6 = {'bw': 200, 'delay': '6ms'}
+    link1_gbps_7_5 = {'bw': 200, 'delay': '7.5ms'}
+    link1_gbps_9 = {'bw': 200, 'delay': '9ms'}
+    link1_gbps_10 = {'bw': 200, 'delay': '10ms'}
+    link1_gbps_11_5 = {'bw': 200, 'delay': '11.5ms'}
+    link1_gbps_12_5 = {'bw': 200, 'delay': '12.5ms'}
     link1_gbps_15 = {'bw': 200, 'delay': '15ms'}
-    link1_gbps_18 = {'bw': 200, 'delay': '18ms'}
-    link1_gbps_20 = {'bw': 200, 'delay': '20ms'}
-    link1_gbps_23 = {'bw': 200, 'delay': '23ms'}
-    link1_gbps_25 = {'bw': 200, 'delay': '25ms'}
-    link1_gbps_30 = {'bw': 200, 'delay': '30ms'}
 
     # net.addLink(Host1,   Switch1,    **linkopts )
     # Adding switches
@@ -144,16 +142,16 @@ def evaluate_topology():
     man4 = simple_create_host(net, 'man4', '10.0.0.244', '00:04:00:00:02:54')
 
     # 1.2. CREATING LINKS
-    link_switch_to_host(net, cdn1, s25, 0, 99, False, link100_mbps_1)
-    link_switch_to_host(net, cdn2, s29, 0, 99, False, link1_gbps_1)
-    link_switch_to_host(net, cdn3, s31, 0, 99, False, link1_gbps_1)
-    link_switch_to_host(net, ext1, s34, 0, 99, False, link1_gbps_30)
+    link_switch_to_host(net, cdn1, s25, 0, 99, False, link100_mbps_0_5)
+    link_switch_to_host(net, cdn2, s29, 0, 99, False, link1_gbps_0_5)
+    link_switch_to_host(net, cdn3, s31, 0, 99, False, link1_gbps_0_5)
+    link_switch_to_host(net, ext1, s34, 0, 99, False, link1_gbps_15)
 
     # 1.2. CREATING LINKS
-    link_switch_to_host(net, man1, s30, 0, 90, False, link1_gbps_1)
-    link_switch_to_host(net, man2, s31, 0, 90, False, link1_gbps_1)
-    link_switch_to_host(net, man3, s32, 0, 90, False, link1_gbps_1)
-    link_switch_to_host(net, man4, s33, 0, 90, False, link1_gbps_1)
+    link_switch_to_host(net, man1, s30, 0, 90, False, link1_gbps_0_5)
+    link_switch_to_host(net, man2, s31, 0, 90, False, link1_gbps_0_5)
+    link_switch_to_host(net, man3, s32, 0, 90, False, link1_gbps_0_5)
+    link_switch_to_host(net, man4, s33, 0, 90, False, link1_gbps_0_5)
 
     # 2.   SWITCH PROCESSING
     # 2.1. CREATING HOSTS
@@ -230,65 +228,65 @@ def evaluate_topology():
 
     # 3. CREATING LINKS BETWEEN SWITCHES
     # Level 3.1 - RAN / Metro
-    link_switch_to_switch(net, s1, s21, 31, 1, link100_mbps_6)
-    link_switch_to_switch(net, s2, s21, 31, 2, link100_mbps_8)
-    link_switch_to_switch(net, s3, s21, 31, 3, link100_mbps_6)
-    link_switch_to_switch(net, s4, s21, 31, 4, link100_mbps_7)
+    link_switch_to_switch(net, s1, s21, 31, 1, link100_mbps_3)
+    link_switch_to_switch(net, s2, s21, 31, 2, link100_mbps_4)
+    link_switch_to_switch(net, s3, s21, 31, 3, link100_mbps_3)
+    link_switch_to_switch(net, s4, s21, 31, 4, link100_mbps_3_5)
 
-    link_switch_to_switch(net, s5, s22, 31, 1, link100_mbps_4)
-    link_switch_to_switch(net, s6, s22, 31, 2, link100_mbps_4)
-    link_switch_to_switch(net, s7, s22, 31, 3, link100_mbps_4)
-    link_switch_to_switch(net, s8, s22, 31, 4, link100_mbps_6)
+    link_switch_to_switch(net, s5, s22, 31, 1, link100_mbps_2)
+    link_switch_to_switch(net, s6, s22, 31, 2, link100_mbps_2)
+    link_switch_to_switch(net, s7, s22, 31, 3, link100_mbps_2)
+    link_switch_to_switch(net, s8, s22, 31, 4, link100_mbps_3)
 
-    link_switch_to_switch(net, s9, s23, 31, 1, link100_mbps_9)
-    link_switch_to_switch(net, s10, s23, 31, 2, link100_mbps_8)
-    link_switch_to_switch(net, s11, s23, 31, 3, link100_mbps_4)
-    link_switch_to_switch(net, s12, s23, 31, 4, link100_mbps_5)
+    link_switch_to_switch(net, s9, s23, 31, 1, link100_mbps_4_5)
+    link_switch_to_switch(net, s10, s23, 31, 2, link100_mbps_4)
+    link_switch_to_switch(net, s11, s23, 31, 3, link100_mbps_2)
+    link_switch_to_switch(net, s12, s23, 31, 4, link100_mbps_2_5)
 
-    link_switch_to_switch(net, s13, s24, 31, 1, link100_mbps_8)
-    link_switch_to_switch(net, s14, s24, 31, 2, link100_mbps_8)
-    link_switch_to_switch(net, s15, s24, 31, 3, link100_mbps_7)
-    link_switch_to_switch(net, s16, s24, 31, 4, link100_mbps_4)
+    link_switch_to_switch(net, s13, s24, 31, 1, link100_mbps_4)
+    link_switch_to_switch(net, s14, s24, 31, 2, link100_mbps_4)
+    link_switch_to_switch(net, s15, s24, 31, 3, link100_mbps_3_5)
+    link_switch_to_switch(net, s16, s24, 31, 4, link100_mbps_2)
 
-    link_switch_to_switch(net, s17, s25, 31, 1, link100_mbps_4)
-    link_switch_to_switch(net, s18, s25, 31, 2, link100_mbps_6)
-    link_switch_to_switch(net, s19, s25, 31, 3, link100_mbps_7)
-    link_switch_to_switch(net, s20, s25, 31, 4, link100_mbps_4)
+    link_switch_to_switch(net, s17, s25, 31, 1, link100_mbps_2)
+    link_switch_to_switch(net, s18, s25, 31, 2, link100_mbps_3)
+    link_switch_to_switch(net, s19, s25, 31, 3, link100_mbps_3_5)
+    link_switch_to_switch(net, s20, s25, 31, 4, link100_mbps_2)
 
     # Level 3.1.5 - Metro Ring
-    link_switch_to_switch(net, s21, s22, 5, 5, link100_mbps_9)
-    link_switch_to_switch(net, s22, s23, 6, 6, link100_mbps_6)
-    link_switch_to_switch(net, s23, s24, 5, 5, link100_mbps_11)
-    link_switch_to_switch(net, s24, s25, 6, 6, link100_mbps_5)
-    link_switch_to_switch(net, s25, s21, 5, 6, link100_mbps_10)  # Link to close ring
+    link_switch_to_switch(net, s21, s22, 5, 5, link100_mbps_4_5)
+    link_switch_to_switch(net, s22, s23, 6, 6, link100_mbps_3)
+    link_switch_to_switch(net, s23, s24, 5, 5, link100_mbps_5_5)
+    link_switch_to_switch(net, s24, s25, 6, 6, link100_mbps_2_5)
+    link_switch_to_switch(net, s25, s21, 5, 6, link100_mbps_5)  # Link to close ring
 
     # Level 3.2 - Metro / Access
-    link_switch_to_switch(net, s22, s27, 7, 1, link1_gbps_20)
-    link_switch_to_switch(net, s23, s28, 7, 1, link1_gbps_30)
+    link_switch_to_switch(net, s22, s27, 7, 1, link1_gbps_10)
+    link_switch_to_switch(net, s23, s28, 7, 1, link1_gbps_15)
 
     # Level 3.2.5 - Access ring
-    link_switch_to_switch(net, s26, s27, 3, 3, link1_gbps_18)
-    link_switch_to_switch(net, s27, s28, 2, 2, link1_gbps_20)
-    link_switch_to_switch(net, s28, s29, 3, 3, link1_gbps_25)
-    link_switch_to_switch(net, s29, s26, 2, 2, link1_gbps_23)  # Link to close ring
+    link_switch_to_switch(net, s26, s27, 3, 3, link1_gbps_9)
+    link_switch_to_switch(net, s27, s28, 2, 2, link1_gbps_10)
+    link_switch_to_switch(net, s28, s29, 3, 3, link1_gbps_12_5)
+    link_switch_to_switch(net, s29, s26, 2, 2, link1_gbps_11_5)  # Link to close ring
 
     # Level 3.3 - Access / Core
-    link_switch_to_switch(net, s26, s30, 4, 1, link1_gbps_20)
-    link_switch_to_switch(net, s27, s30, 4, 2, link1_gbps_15)
-    link_switch_to_switch(net, s28, s31, 4, 1, link1_gbps_25)
-    link_switch_to_switch(net, s29, s31, 4, 2, link1_gbps_30)
+    link_switch_to_switch(net, s26, s30, 4, 1, link1_gbps_10)
+    link_switch_to_switch(net, s27, s30, 4, 2, link1_gbps_7_5)
+    link_switch_to_switch(net, s28, s31, 4, 1, link1_gbps_12_5)
+    link_switch_to_switch(net, s29, s31, 4, 2, link1_gbps_15)
 
     # Level 3.4 - Full-mesh Core
-    link_switch_to_switch(net, s30, s31, 3, 3, link1_gbps_12)
-    link_switch_to_switch(net, s30, s32, 4, 4, link1_gbps_20)
-    link_switch_to_switch(net, s30, s33, 5, 5, link1_gbps_18)
-    link_switch_to_switch(net, s31, s32, 5, 5, link1_gbps_23)
-    link_switch_to_switch(net, s31, s33, 4, 4, link1_gbps_30)
-    link_switch_to_switch(net, s32, s33, 3, 3, link1_gbps_15)
+    link_switch_to_switch(net, s30, s31, 3, 3, link1_gbps_6)
+    link_switch_to_switch(net, s30, s32, 4, 4, link1_gbps_10)
+    link_switch_to_switch(net, s30, s33, 5, 5, link1_gbps_9)
+    link_switch_to_switch(net, s31, s32, 5, 5, link1_gbps_11_5)
+    link_switch_to_switch(net, s31, s33, 4, 4, link1_gbps_15)
+    link_switch_to_switch(net, s32, s33, 3, 3, link1_gbps_7_5)
 
     # Level 3.5 - Core / Internet
-    link_switch_to_switch(net, s32, s34, 1, 1, link1_gbps_25)
-    link_switch_to_switch(net, s33, s34, 1, 2, link1_gbps_30)
+    link_switch_to_switch(net, s32, s34, 1, 1, link1_gbps_12_5)
+    link_switch_to_switch(net, s33, s34, 1, 2, link1_gbps_15)
 
     # 4. SOURCES
     # 4.1. CREATING HOSTS
