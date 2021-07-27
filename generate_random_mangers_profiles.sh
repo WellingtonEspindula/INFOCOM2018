@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 echo "agent;manager;first-trigger-time;polling-throughput-tcp;polling-rtt;polling-loss"
-for i in {001..010}; do
+ftt=1
+for i in {001..200..20}; do
 	random_manager=$((1 + $RANDOM % 4))
 	random_tp="$((2 + $RANDOM % 4)).$(printf "%02d" $(($RANDOM % 60)) )"
 	random_rtt="$(($RANDOM % 3)).$(printf "%02d" $(($RANDOM % 60)) )"
@@ -12,6 +13,7 @@ for i in {001..010}; do
 	#random_loss="$(($RANDOM % 3)).$(($RANDOM % 60))"
 	random_loss=$random_rtt
 
-	#echo "u$i;man$random_manager;1;$random_tp;$random_rtt;$random_loss"
-	echo "u$i;man$random_manager;1;$random_tp;$random_rtt;-1"
+	echo "u$i;man$random_manager;$ftt;$random_tp;$random_rtt;$random_loss"
+#	echo "u$i;man$random_manager;1;$random_tp;$random_rtt;-1"
+  ftt=$(echo "$ftt + 0.5" | bc)
 done
