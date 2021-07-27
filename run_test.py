@@ -265,19 +265,19 @@ def measurement_finish() -> None:
     rotate()
 
 
-def measurement_service(metric: Metric, period_in_minutes: float):
-    # First of all, must wait the first trigger time
-    first_trigger_time = (3 + (random() % 29))
-    print(f'Waiting for {first_trigger_time} s for stating this measure')
-    time.sleep(first_trigger_time)
+def measurement_service(metric: Metric, period_in_seconds: float):
+    """
+    Service whose responsibility is create the measurement schedule, enqueue it and
+    waiting for measure polling time
+    """
 
-    # Keep waiting the given period (polling) and calls metricagent
+    time.sleep(period_in_seconds)
     while True:
         schedule = Schedule(agent_hostname, manager_hostname, metric)
         schedule.create_and_save()
         enqueue_schedule(schedule)
 
-        time.sleep(period_in_minutes)
+        time.sleep(period_in_seconds)
 
 
 def is_manager_busy(manager: str):
@@ -315,15 +315,18 @@ if __name__ == '__main__':
     parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
     parser.add_argument("rtt_period", type=float, help="Rtt measurement repeating period (min)")
     parser.add_argument("loss_period", type=float, help="Loss measurement repeating period (min)")
+    parser.add_argument("-ftt", "--first_trigger_time", type=float, nargs='?',
+                        help="How long it takes to start the measures")
     args = parser.parse_args()
 
     # Init with constant seed
     rand.seed(50)
 
     # Read parameters from input
-    tp_period = args.throughput_tcp_period * 60
-    rtt_period = args.rtt_period * 60
-    loss_period = args.loss_period * 60
+    tp_period_seconds = args.throughput_tcp_period * 60
+    rtt_period_seconds = args.rtt_period * 60
+    loss_period_seconds = args.loss_period * 60
+    first_trigger_time_seconds = args.first_trigger_time * 60
     agent_hostname = args.agent_hostname
     manager_hostname = args.manager_hostname
     uses_manager = args.manager
@@ -353,20 +356,29 @@ if __name__ == '__main__':
         manager_procs.append(manager_process)
         signal.signal(signal.SIGINT, interruption_handler)
 
-    if tp_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.THROUGHPUT_TCP.value, tp_period,))
+    # First of all, must wait the first trigger time
+    first_trigger_seconds = first_trigger_time_seconds + (3 + (random() % 20))
+    print(f'Waiting for {first_trigger_time_seconds} s for stating this measure')
+    time.sleep(first_trigger_time_seconds)
+
+    if tp_period_seconds > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.THROUGHPUT_TCP.value,
+                                                                        tp_period_seconds,))
         mes_thread.start()
 
-    if rtt_period == loss_period and rtt_period > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.UDP_PACK.value, rtt_period,))
+    if rtt_period_seconds == loss_period_seconds and rtt_period_seconds > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.UDP_PACK.value,
+                                                                        rtt_period_seconds,))
         mes_thread.start()
     else:
-        if rtt_period > 0:
-            mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.RTT.value, rtt_period,))
+        if rtt_period_seconds > 0:
+            mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.RTT.value,
+                                                                            rtt_period_seconds,))
             mes_thread.start()
 
-        if loss_period > 0:
-            mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS.value, loss_period,))
+        if loss_period_seconds > 0:
+            mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS.value,
+                                                                            loss_period_seconds,))
             mes_thread.start()
 
     # Test zone
