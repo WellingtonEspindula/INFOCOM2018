@@ -21,6 +21,7 @@ from xml.etree import ElementTree
 m = "/home/mininet/mininet/util/m"
 manager_procs = []
 
+MAX_THREADS = 8
 
 class Protocol(Enum):
     UDP = 0
@@ -334,7 +335,8 @@ def run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time
 
 
 def start_managers():
-    print("Starting manager...")
+    print("Starting managers...")
+    signal.signal(signal.SIGINT, interruption_handler)
     run_manager("man1")
     run_manager("man2")
     run_manager("man3")
@@ -342,25 +344,29 @@ def start_managers():
     print("Started manager... Let's wait them to wake up")
     time.sleep(60)
     print("Ok, Managers should be awake now. Let's get start measurements!")
-    signal.signal(signal.SIGINT, interruption_handler)
 
 
 def run_manager(manager_hostname: str, uses_manager: bool = True):
+    run_manager.core = run_manager.core + 1 if run_manager.core <= MAX_THREADS else run_manager.core
     renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
     manager_port_busy = is_manager_busy(renamed_manager)
+    print(f"Is manager {renamed_manager} busy: {manager_port_busy}")
     while manager_port_busy:
         manager_port_busy = is_manager_busy(renamed_manager)
         print(f"Waiting for manager {renamed_manager} free the port up...")
         os.system(f'{m} {renamed_manager} killall -9 metricmanager')
         time.sleep(5)
     # Starts metric manager first
-    command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
+    command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
+    print(command)
+    # os.system(command)
     # Run Netmetric Manager using subprocess
     manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
                                        preexec_fn=os.setsid)
     time.sleep(20)
     manager_procs.append(manager_process)
 
+run_manager.core = 0
 
 if __name__ == '__main__':
     # Informing script arguments
@@ -418,10 +424,10 @@ if __name__ == '__main__':
                     # Read parameters from file
                     agent_hostname = line[0]
                     manager_hostname = line[1]
-                    first_trigger_time_seconds = line[2] * 60
-                    tp_period_seconds = line[3] * 60
-                    rtt_period_seconds = line[4] * 60
-                    loss_period_seconds = line[5] * 60
+                    first_trigger_time_seconds = float(line[2]) * 60
+                    tp_period_seconds = float(line[3]) * 60
+                    rtt_period_seconds = float(line[4]) * 60
+                    loss_period_seconds = float(line[5]) * 60
 
                     run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds,
                                             tp_period_seconds, rtt_period_seconds, loss_period_seconds)
