@@ -342,6 +342,7 @@ def start_managers():
     print("Started manager... Let's wait them to wake up")
     time.sleep(60)
     print("Ok, Managers should be awake now. Let's get start measurements!")
+    signal.signal(signal.SIGINT, interruption_handler)
 
 
 def run_manager(manager_hostname: str):
@@ -359,7 +360,6 @@ def run_manager(manager_hostname: str):
                                        preexec_fn=os.setsid)
     time.sleep(20)
     manager_procs.append(manager_process)
-    signal.signal(signal.SIGINT, interruption_handler)
 
 
 if __name__ == '__main__':
@@ -368,8 +368,7 @@ if __name__ == '__main__':
         description='Performs a repeated measure in a pair src-dst given period of each measure type')
     # parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
     # parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
-    parser.add_argument("-f", "--file", help="Open from a file", type=argparse.FileType('r', encoding="UTF-8"),
-                        nargs='?')
+    parser.add_argument("-f", "--file", help="Open from a file", type=str, nargs='?')
     opts, rem_args = parser.parse_known_args()
     if opts.file is None:
         parser.add_argument("-m", "--manager", help="Uses Manager", action="store_true")
@@ -378,7 +377,8 @@ if __name__ == '__main__':
                             help="How long it takes to start the measures")
         parser.add_argument("agent_hostname", type=str, help="Agent hostname")
         parser.add_argument("manager_hostname", type=str, help="Manager hostname")
-        parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
+        parser.add_argument("throughput_tcp_period", type=float,
+                            help="Throughput TCP measurement repeating period (min)")
         parser.add_argument("rtt_period", type=float, help="Rtt measurement repeating period (min)")
         parser.add_argument("loss_period", type=float, help="Loss measurement repeating period (min)")
         args = parser.parse_args(rem_args, opts)
