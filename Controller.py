@@ -26,6 +26,7 @@ from ryu.controller.handler import set_ev_cls
 from ryu.lib.packet import ethernet, ipv4, arp
 from ryu.lib.packet import packet
 from ryu.ofproto import ofproto_v1_3, ether
+from ryu.ofproto.ofproto_v1_5_parser import OFPMatch
 from webob import Response
 
 ARP = arp.arp.__name__
@@ -125,12 +126,22 @@ class BQoEPathApi(app_manager.RyuApp):
         actions = []
         self.add_flow(datapath, ofproto.OFP_DEFAULT_PRIORITY, match, actions)
 
-    # Descr: function that installs flow entry on switch
-    # Args: datapath: datapath of the switch to install the entry,
-    #       priority: priority of the flow entry,
-    #       match: rule to be matched (ipv4=....,)
-    #       actions: actions to be made after a match
-    def add_flow(self, datapath, priority, match, actions):
+    @staticmethod
+    def add_flow(datapath, priority: int, match: OFPMatch, actions):
+        """
+        Installs flow entry on switch
+
+        Parameters
+        ----------
+        datapath
+            datapath of the switch to install the entry
+        priority
+            priority of the flow entry
+        match
+            rule to be matched (ipv4=....,)
+        actions
+            actions to be made after a match
+        """
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -141,10 +152,13 @@ class BQoEPathApi(app_manager.RyuApp):
                                 match=match, instructions=inst)
         datapath.send_msg(mod)
 
-    # Descr: pre-made function that receives OpenFlow packet_in events
-    # Not used in this version of BQoEP, but will be on next release
+
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
+        """
+        Receives OpenFlow packet_in events
+        Ps.: Not used in this version of BQoEP, but will be on next release
+        """
 
         self.logger.info("I'm a packet in a router. Please say what I have to do")
 
@@ -154,7 +168,8 @@ class BQoEPathApi(app_manager.RyuApp):
         parser = datapath.ofproto_parser
         in_port = msg.match['in_port']
 
-        self.logger.info(f"Packet in handler -> [msg={msg}], [datapath={datapath}], [ofproto={ofproto}], [in_port={in_port}]")
+        self.logger.info(
+            f"Packet in handler -> [msg={msg}], [datapath={datapath}], [ofproto={ofproto}], [in_port={in_port}]")
 
         reg = re.compile(".([0-9]+)$")
 
@@ -437,7 +452,7 @@ class BQoEPathApi(app_manager.RyuApp):
     def readNmCsv(self):
         auxSet = set()
 
-        csvFile = "nm_last_results.csv"
+        csvFile = "nm_static_results.csv"
         countControlFile = "count_control.csv"
 
         fin = open(csvFile, "r")
@@ -642,7 +657,7 @@ class BQoEPathApi(app_manager.RyuApp):
     def localBestQoePath(self, src, dst):
         _auxSet = set()
 
-        _csvFile = "nm_last_results.csv"
+        _csvFile = "nm_static_results.csv"
 
         _fin = open(_csvFile, "r")
 
@@ -2105,9 +2120,9 @@ class BQoEPathController(ControllerBase):
 
         humanmin_sp = [self.bqoe_path_spp.host_from_switch(elem) for elem in min_sp]
 
-        #final_mos = self.bqoe_path_spp.calculate_composed_mos(humanmin_sp)
-        #final_tp = 10000000000
-        #for i in range(0, (len(humanmin_sp) - 2)):
+        # final_mos = self.bqoe_path_spp.calculate_composed_mos(humanmin_sp)
+        # final_tp = 10000000000
+        # for i in range(0, (len(humanmin_sp) - 2)):
         #    index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
         #    index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
         #    if self.bqoe_path_spp.bw[index1][index2] < final_tp:
@@ -2116,19 +2131,19 @@ class BQoEPathController(ControllerBase):
         # if self.bqoe_path_spp.bw[index1][index2] < 0:
         #    self.bqoe_path_spp.bw[index1][index2] = 0.0
 
-        #result = {"mos": final_mos, "tp": final_tp, "dst": humanmin_sp[0],
+        # result = {"mos": final_mos, "tp": final_tp, "dst": humanmin_sp[0],
         #          "dest_ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
         result = {"dst": humanmin_sp[0],
                   "dest_ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
         self.bqoe_path_spp.deploy_any_path(humanmin_sp)
 
-        #auxmap = {"name": humanmin_sp[0], "mos": final_mos, "tp": final_tp,
+        # auxmap = {"name": humanmin_sp[0], "mos": final_mos, "tp": final_tp,
         #          "ip": self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), "path": humanmin_sp}
 
-        #if self.bqoe_path_spp.mydict.get(src) is None:
+        # if self.bqoe_path_spp.mydict.get(src) is None:
         #    self.bqoe_path_spp.mydict[src] = {}
 
-        #self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
+        # self.bqoe_path_spp.mydict[src][humanmin_sp[0]] = auxmap
 
         body = json.dumps(result, indent=4)
         return Response(content_type='application/json', body=body, charset="UTF-8")

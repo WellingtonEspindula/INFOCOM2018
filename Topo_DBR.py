@@ -73,24 +73,24 @@ def evaluate_topology():
 
     linknodeg = {}
 
-    link100_mbps_0_5 = {'bw': 20, 'delay': '0.5ms'}
-    link100_mbps_2 = {'bw': 20, 'delay': '2ms'}
-    link100_mbps_2_5 = {'bw': 20, 'delay': '2.5ms'}
-    link100_mbps_3 = {'bw': 20, 'delay': '3ms'}
-    link100_mbps_3_5 = {'bw': 20, 'delay': '3.5ms'}
-    link100_mbps_4 = {'bw': 20, 'delay': '4ms'}
-    link100_mbps_4_5 = {'bw': 20, 'delay': '4.5ms'}
-    link100_mbps_5 = {'bw': 20, 'delay': '5ms'}
-    link100_mbps_5_5 = {'bw': 20, 'delay': '5.5ms'}
+    link100_mbps_0_5 = {'bw': 2, 'delay': '0.5ms'}
+    link100_mbps_2 = {'bw': 2, 'delay': '2ms'}
+    link100_mbps_2_5 = {'bw': 2, 'delay': '2.5ms'}
+    link100_mbps_3 = {'bw': 2, 'delay': '3ms'}
+    link100_mbps_3_5 = {'bw': 2, 'delay': '3.5ms'}
+    link100_mbps_4 = {'bw': 2, 'delay': '4ms'}
+    link100_mbps_4_5 = {'bw': 2, 'delay': '4.5ms'}
+    link100_mbps_5 = {'bw': 2, 'delay': '5ms'}
+    link100_mbps_5_5 = {'bw': 2, 'delay': '5.5ms'}
 
-    link1_gbps_0_5 = {'bw': 200, 'delay': '0.5ms'}
-    link1_gbps_6 = {'bw': 200, 'delay': '6ms'}
-    link1_gbps_7_5 = {'bw': 200, 'delay': '7.5ms'}
-    link1_gbps_9 = {'bw': 200, 'delay': '9ms'}
-    link1_gbps_10 = {'bw': 200, 'delay': '10ms'}
-    link1_gbps_11_5 = {'bw': 200, 'delay': '11.5ms'}
-    link1_gbps_12_5 = {'bw': 200, 'delay': '12.5ms'}
-    link1_gbps_15 = {'bw': 200, 'delay': '15ms'}
+    link1_gbps_0_5 = {'bw': 20, 'delay': '0.5ms'}
+    link1_gbps_6 = {'bw': 20, 'delay': '6ms'}
+    link1_gbps_7_5 = {'bw': 20, 'delay': '7.5ms'}
+    link1_gbps_9 = {'bw': 20, 'delay': '9ms'}
+    link1_gbps_10 = {'bw': 20, 'delay': '10ms'}
+    link1_gbps_11_5 = {'bw': 20, 'delay': '11.5ms'}
+    link1_gbps_12_5 = {'bw': 20, 'delay': '12.5ms'}
+    link1_gbps_15 = {'bw': 20, 'delay': '15ms'}
 
     # net.addLink(Host1,   Switch1,    **linkopts )
     # Adding switches
