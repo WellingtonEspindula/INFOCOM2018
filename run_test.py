@@ -370,21 +370,19 @@ if __name__ == '__main__':
     # parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
     parser.add_argument("-f", "--file", help="Open from a file", type=argparse.FileType('r', encoding="UTF-8"),
                         nargs='?')
-    parser.add_argument("-m", "--manager", help="Uses Manager", action="store_true")
-    parser.add_argument("-s", "--start_metricman", help="Start Netmetric Manager on Manager", action="store_true")
-    parser.add_argument("agent_hostname", type=str, help="Agent hostname")
-    parser.add_argument("manager_hostname", type=str, help="Manager hostname")
-    parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
-    parser.add_argument("rtt_period", type=float, help="Rtt measurement repeating period (min)")
-    parser.add_argument("loss_period", type=float, help="Loss measurement repeating period (min)")
-    parser.add_argument("-ftt", "--first_trigger_time", type=float, nargs='?',
-                        help="How long it takes to start the measures")
-    args = parser.parse_args()
+    opts, rem_args = parser.parse_known_args()
+    if opts.file is None:
+        parser.add_argument("-m", "--manager", help="Uses Manager", action="store_true")
+        parser.add_argument("-sm", "--start_metricman", help="Start Netmetric Manager on Manager", action="store_true")
+        parser.add_argument("-stt", "--start_trigger_time", type=float, nargs='?',
+                            help="How long it takes to start the measures")
+        parser.add_argument("agent_hostname", type=str, help="Agent hostname")
+        parser.add_argument("manager_hostname", type=str, help="Manager hostname")
+        parser.add_argument("throughput_tcp_period", type=float, help="Throughput TCP measurement repeating period (min)")
+        parser.add_argument("rtt_period", type=float, help="Rtt measurement repeating period (min)")
+        parser.add_argument("loss_period", type=float, help="Loss measurement repeating period (min)")
+        args = parser.parse_args(rem_args, opts)
 
-    # Init with constant seed
-    rand.seed(50)
-
-    if args.file is None:
         # Read parameters from input
         tp_period_seconds = args.throughput_tcp_period * 60
         rtt_period_seconds = args.rtt_period * 60
@@ -406,9 +404,11 @@ if __name__ == '__main__':
         run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
                                 rtt_period_seconds, loss_period_seconds)
     else:
+        args = parser.parse_args()
+        file_input = args.file
+
         start_managers()
 
-        file_input = args.file
         with open(file_input) as measurement_profiles:
             csv_reader = csv.reader(measurement_profiles, delimiter=";")
             for line_number, line in enumerate(csv_reader):
