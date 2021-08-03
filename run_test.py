@@ -23,6 +23,7 @@ manager_procs = []
 
 MAX_THREADS = 8
 
+
 class Protocol(Enum):
     UDP = 0
     TCP = 1
@@ -267,11 +268,17 @@ def measurement_finish() -> None:
     rotate()
 
 
-def measurement_service(agent_hostname: str, manager_hostname: str, metric: Metric, period_in_seconds: float):
+def measurement_service(agent_hostname: str, manager_hostname: str, first_trigger_time_seconds,
+                        metric: Metric, period_in_seconds: float):
     """
     Service whose responsibility is create the measurement schedule, enqueue it and
     waiting for measure polling time
     """
+
+    # First of all, must wait the first trigger time
+    first_trigger_seconds = first_trigger_time_seconds + (3 + (random() % 20))
+    print(f'Waiting for {first_trigger_seconds} s for stating this measure')
+    time.sleep(first_trigger_seconds)
 
     time.sleep(period_in_seconds)
     while True:
@@ -306,29 +313,29 @@ def interruption_handler(sig, frame):
 
 def run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
                             rtt_period_seconds, loss_period_seconds) -> None:
-    # First of all, must wait the first trigger time
-    first_trigger_seconds = first_trigger_time_seconds + (3 + (random() % 20))
-    print(f'Waiting for {first_trigger_seconds} s for stating this measure')
-    time.sleep(first_trigger_seconds)
     if tp_period_seconds > 0:
         mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                        first_trigger_time_seconds,
                                                                         MetricTypes.THROUGHPUT_TCP.value,
                                                                         tp_period_seconds,))
         mes_thread.start()
     if rtt_period_seconds == loss_period_seconds and rtt_period_seconds > 0:
         mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                        first_trigger_time_seconds,
                                                                         MetricTypes.UDP_PACK.value,
                                                                         rtt_period_seconds,))
         mes_thread.start()
     else:
         if rtt_period_seconds > 0:
             mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                            first_trigger_time_seconds,
                                                                             MetricTypes.RTT.value,
                                                                             rtt_period_seconds,))
             mes_thread.start()
 
         if loss_period_seconds > 0:
             mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                            first_trigger_time_seconds,
                                                                             MetricTypes.LOSS.value,
                                                                             loss_period_seconds,))
             mes_thread.start()
@@ -357,14 +364,15 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
         os.system(f'{m} {renamed_manager} killall -9 metricmanager')
         time.sleep(5)
     # Starts metric manager first
-    command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
+    command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
     print(command)
-    # os.system(command)
+    os.system(command)
     # Run Netmetric Manager using subprocess
-    manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
-                                       preexec_fn=os.setsid)
+    # manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
+    #                                    preexec_fn=os.setsid)
     time.sleep(20)
-    manager_procs.append(manager_process)
+    # manager_procs.append(manager_process)
+
 
 run_manager.core = 0
 
