@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.9
-
+import argparse
 import csv
+import encodings
 import os
 import random as rand
 import shutil
@@ -265,7 +266,7 @@ def measurement_finish() -> None:
     rotate()
 
 
-def measurement_service(metric: Metric, period_in_seconds: float):
+def measurement_service(agent_hostname: str, manager_hostname: str, metric: Metric, period_in_seconds: float):
     """
     Service whose responsibility is create the measurement schedule, enqueue it and
     waiting for measure polling time
@@ -302,12 +303,73 @@ def interruption_handler(sig, frame):
     sys.exit(0)
 
 
+def run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
+                            rtt_period_seconds, loss_period_seconds) -> None:
+    # First of all, must wait the first trigger time
+    first_trigger_seconds = first_trigger_time_seconds + (3 + (random() % 20))
+    print(f'Waiting for {first_trigger_seconds} s for stating this measure')
+    time.sleep(first_trigger_seconds)
+    if tp_period_seconds > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                        MetricTypes.THROUGHPUT_TCP.value,
+                                                                        tp_period_seconds,))
+        mes_thread.start()
+    if rtt_period_seconds == loss_period_seconds and rtt_period_seconds > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                        MetricTypes.UDP_PACK.value,
+                                                                        rtt_period_seconds,))
+        mes_thread.start()
+    else:
+        if rtt_period_seconds > 0:
+            mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                            MetricTypes.RTT.value,
+                                                                            rtt_period_seconds,))
+            mes_thread.start()
+
+        if loss_period_seconds > 0:
+            mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                            MetricTypes.LOSS.value,
+                                                                            loss_period_seconds,))
+            mes_thread.start()
+
+
+def start_managers():
+    print("Starting manager...")
+    run_manager("man1")
+    run_manager("man2")
+    run_manager("man3")
+    run_manager("man4")
+    print("Started manager... Let's wait them to wake up")
+    time.sleep(60)
+    print("Ok, Managers should be awake now. Let's get start measurements!")
+
+
+def run_manager(manager_hostname: str):
+    renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
+    manager_port_busy = is_manager_busy(renamed_manager)
+    while manager_port_busy:
+        manager_port_busy = is_manager_busy(renamed_manager)
+        print(f"Waiting for manager {renamed_manager} free the port up...")
+        os.system(f'{m} {renamed_manager} killall -9 metricmanager')
+        time.sleep(5)
+    # Starts metric manager first
+    command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
+    # Run Netmetric Manager using subprocess
+    manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
+                                       preexec_fn=os.setsid)
+    time.sleep(20)
+    manager_procs.append(manager_process)
+    signal.signal(signal.SIGINT, interruption_handler)
+
+
 if __name__ == '__main__':
     # Informing script arguments
     parser = ArgumentParser(
         description='Performs a repeated measure in a pair src-dst given period of each measure type')
     # parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
     # parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
+    parser.add_argument("-f", "--file", help="Open from a file", type=argparse.FileType('r', encoding="UTF-8"),
+                        nargs='?')
     parser.add_argument("-m", "--manager", help="Uses Manager", action="store_true")
     parser.add_argument("-s", "--start_metricman", help="Start Netmetric Manager on Manager", action="store_true")
     parser.add_argument("agent_hostname", type=str, help="Agent hostname")
@@ -322,64 +384,47 @@ if __name__ == '__main__':
     # Init with constant seed
     rand.seed(50)
 
-    # Read parameters from input
-    tp_period_seconds = args.throughput_tcp_period * 60
-    rtt_period_seconds = args.rtt_period * 60
-    loss_period_seconds = args.loss_period * 60
-    first_trigger_time_seconds = args.first_trigger_time * 60
-    agent_hostname = args.agent_hostname
-    manager_hostname = args.manager_hostname
-    uses_manager = args.manager
-    start_manager = args.start_metricman
+    if args.file is None:
+        # Read parameters from input
+        tp_period_seconds = args.throughput_tcp_period * 60
+        rtt_period_seconds = args.rtt_period * 60
+        loss_period_seconds = args.loss_period * 60
+        first_trigger_time_seconds = args.first_trigger_time * 60
+        agent_hostname = args.agent_hostname
+        manager_hostname = args.manager_hostname
+        uses_manager = args.manager
+        start_manager = args.start_metricman
 
-    if not os.path.exists("results"):
-        os.makedirs("results")
-    if not os.path.exists("results/xml"):
-        os.makedirs("results/xml")
+        if not os.path.exists("results"):
+            os.makedirs("results")
+        if not os.path.exists("results/xml"):
+            os.makedirs("results/xml")
 
-    if start_manager:
-        renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
-        manager_port_busy = is_manager_busy(renamed_manager)
-        while manager_port_busy:
-            manager_port_busy = is_manager_busy(renamed_manager)
-            print(f"Waiting for manager {renamed_manager} free the port up...")
-            os.system(f'{m} {renamed_manager} killall metricmanager')
-            time.sleep(5)
+        if start_manager:
+            run_manager(manager_hostname)
 
-        # Starts metric manager first
-        command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
-        # Run Netmetric Manager using subprocess
-        manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
-                                           preexec_fn=os.setsid)
-        time.sleep(20)
-
-        manager_procs.append(manager_process)
-        signal.signal(signal.SIGINT, interruption_handler)
-
-    # First of all, must wait the first trigger time
-    first_trigger_seconds = first_trigger_time_seconds + (3 + (random() % 20))
-    print(f'Waiting for {first_trigger_time_seconds} s for stating this measure')
-    time.sleep(first_trigger_time_seconds)
-
-    if tp_period_seconds > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.THROUGHPUT_TCP.value,
-                                                                        tp_period_seconds,))
-        mes_thread.start()
-
-    if rtt_period_seconds == loss_period_seconds and rtt_period_seconds > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.UDP_PACK.value,
-                                                                        rtt_period_seconds,))
-        mes_thread.start()
+        run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
+                                rtt_period_seconds, loss_period_seconds)
     else:
-        if rtt_period_seconds > 0:
-            mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.RTT.value,
-                                                                            rtt_period_seconds,))
-            mes_thread.start()
+        start_managers()
 
-        if loss_period_seconds > 0:
-            mes_thread = threading.Thread(target=measurement_service, args=(MetricTypes.LOSS.value,
-                                                                            loss_period_seconds,))
-            mes_thread.start()
+        file_input = args.file
+        with open(file_input) as measurement_profiles:
+            csv_reader = csv.reader(measurement_profiles, delimiter=";")
+            for line_number, line in enumerate(csv_reader):
+
+                # Skip blank lines and header line
+                if line is not None and line_number != 0:
+                    # Read parameters from file
+                    agent_hostname = line[0]
+                    manager_hostname = line[1]
+                    first_trigger_time_seconds = line[2] * 60
+                    tp_period_seconds = line[3] * 60
+                    rtt_period_seconds = line[4] * 60
+                    loss_period_seconds = line[5] * 60
+
+                    run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds,
+                                            tp_period_seconds, rtt_period_seconds, loss_period_seconds)
 
     # Test zone
     # manager_hostname = "man1"
