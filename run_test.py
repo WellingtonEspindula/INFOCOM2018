@@ -345,7 +345,7 @@ def start_managers():
     signal.signal(signal.SIGINT, interruption_handler)
 
 
-def run_manager(manager_hostname: str):
+def run_manager(manager_hostname: str, uses_manager: bool = True):
     renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
     manager_port_busy = is_manager_busy(renamed_manager)
     while manager_port_busy:
