@@ -1,15 +1,13 @@
 #!/usr/bin/env python3.9
-import argparse
 import csv
-import encodings
 import os
-import random as rand
 import shutil
 import signal
 import subprocess
 import sys
 import threading
 import time
+import urllib.request
 import uuid
 from argparse import ArgumentParser
 from dataclasses import dataclass
@@ -22,6 +20,9 @@ m = "/home/mininet/mininet/util/m"
 manager_procs = []
 
 MAX_THREADS = 8
+
+CONTROLLER_API_HOSTNAME = "localhost"
+CONTROLLER_API_PORT = 8080
 
 
 class Protocol(Enum):
@@ -207,8 +208,8 @@ class Schedule:
         current_timestamp = str(datetime.now())
         if self.metric is not None:
             for name in self.metric.names:
-                upload_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/upavg", "")
-                download_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/downavg", "")
+                upload_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/upavg", default='')
+                download_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/downavg", default='')
 
                 data = [
                     self.agent_hostname,
@@ -311,8 +312,19 @@ def interruption_handler(sig, frame):
     sys.exit(0)
 
 
+def save_pid(pid: int, pids_file: str) -> None:
+    with open(pids_file, mode="a+") as pfile:
+        pfile.write(f"{pid}\n")
+
+
 def run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
                             rtt_period_seconds, loss_period_seconds) -> None:
+    save_pid(os.getpid(), "/tmp/pids_running.txt")
+
+    route = urllib.request.urlopen(f'http://{CONTROLLER_API_HOSTNAME}:{CONTROLLER_API_PORT}/bqoepath/'
+                                   f'pathtomanager-{agent_hostname}-{manager_hostname}').read()
+    print(route)
+
     if tp_period_seconds > 0:
         mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
                                                                         first_trigger_time_seconds,
@@ -350,7 +362,7 @@ def start_managers():
     run_manager("man4")
     print("Started manager... Let's wait them to wake up")
     time.sleep(60)
-    print("Ok, Managers should be awake now. Let's get start measurements!")
+    print("Ok, Managers should be awake now. Let's get start the measurements!")
 
 
 def run_manager(manager_hostname: str, uses_manager: bool = True):
@@ -364,7 +376,7 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
         os.system(f'{m} {renamed_manager} killall -9 metricmanager')
         time.sleep(5)
     # Starts metric manager first
-    command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c"
+    command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
     print(command)
     os.system(command)
     # Run Netmetric Manager using subprocess
@@ -377,6 +389,10 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
 run_manager.core = 0
 
 if __name__ == '__main__':
+    # Save parent's pid
+    os.remove("/tmp/pids_running.txt")
+    save_pid(os.getpid(), "/tmp/pids_running.txt")
+
     # Informing script arguments
     parser = ArgumentParser(
         description='Performs a repeated measure in a pair src-dst given period of each measure type')
