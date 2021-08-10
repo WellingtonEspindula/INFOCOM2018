@@ -62,10 +62,14 @@ def read_topology() -> list[LinkInfo]:
     links_pattern = re. \
         compile(r"(link[0-9]*_[kmg]bps(_\d+){1,2}) = {'bw': ([0-9]*), 'delay': '((\d+)|(\d+\.\d+))ms'}")
 
-    links_labels = {}
+    links_labels = {"linknodeg": ("0", "inf")}
 
     switch_to_switch_pattern = re. \
-        compile(r"link_switch_to_switch\(net, (s\d+), (s\d+), \d+, \d+, (link[0-9]*_[kmg]bps(_[0-9]+){1,2})\)")
+        compile(r"link_switch_to_switch\(net, (s\d+), (s\d+), \d+, \d+, (link[0-9]*_[kmg]bps(?:_[0-9]+){1,2})\)")
+
+    switch_to_host_pattern = re. \
+        compile(r"link_switch_to_host\(net, (u\d+|cdn\d+|man\d+), (s\d+), \d+, \d+, (?:True|False), "
+                r"(link[0-9]*_[kmg]bps(?:_[0-9]+){1,2}|linknodeg)\)")
 
     links: list[LinkInfo] = list()
 
@@ -78,22 +82,27 @@ def read_topology() -> list[LinkInfo]:
 
                 links_labels.update({link_label: (link_bw, link_delay)})
 
-            for match in re.finditer(switch_to_switch_pattern, line):
-                switch1 = match.group(1)
-                switch2 = match.group(2)
-                link_label = match.group(3)
-
-                h_switch1 = rename_switch(switch1)
-                h_switch2 = rename_switch(switch2)
-
-                link_info = links_labels.get(link_label)
-                bw = float(link_info[0])
-                delay = float(link_info[1])
-
-                link = LinkInfo(host1=h_switch1, host2=h_switch2, bandwidth=bw, delay=delay)
-                links.append(link)
+            find_link_pattern(line, links, links_labels, switch_to_switch_pattern, False)
+            find_link_pattern(line, links, links_labels, switch_to_host_pattern, True)
 
     return links
+
+
+def find_link_pattern(line, links, links_labels, pattern, switch_to_host: bool = False):
+    for match in re.finditer(pattern, line):
+        switch1 = match.group(1)
+        switch2 = match.group(2)
+        link_label = match.group(3)
+
+        source = switch1 if switch_to_host else rename_switch(switch1)
+        destine = rename_switch(switch2)
+
+        link_info = links_labels.get(link_label)
+        bw = float(link_info[0])
+        delay = float(link_info[1])
+
+        link = LinkInfo(host1=source, host2=destine, bandwidth=bw, delay=delay)
+        links.append(link)
 
 
 def export_csv(topology_info: list[LinkInfo]) -> None:
@@ -105,4 +114,5 @@ def export_csv(topology_info: list[LinkInfo]) -> None:
 
 
 links = read_topology()
+# print(links)
 export_csv(links)

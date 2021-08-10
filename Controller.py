@@ -1189,17 +1189,12 @@ class BQoEPathApi(app_manager.RyuApp):
                         # distance[u] = 5.1 - mos
                         if (M[h][node] != float("-Inf")) and (bwAux > M[h][neighbour]) and (
                                 (MNext[h][neighbour] == float("-Inf")) or (bwAux > MNext[h][neighbour])):
-                            # if  (distance[node] != float("Inf")) and ((5.1 - mos) < distance[neighbour]):
-                            # if (predecessor[neighbour] != None):
-                            #    np = self.nodes[predecessor[neighbour]]
-                            #    if (predecessor[predecessor[neighbour]] != None):
-                            #        npp = self.nodes[predecessor[predecessor[neighbour]]]
-                            #    else:
-                            #        npp = "None"
-                            # else:
-                            #    np = "None"
-                            #    npp = "None"
-                            # print("Neigh: " + self.nodes[neighbour] + " N: " + self.nodes[node] + " MOS: " + str(mos) + " MH: " + str(M[h][neighbour]) + " OP: " + np + " FOP: " + npp)
+                            # if  (distance[node] != float("Inf")) and ((5.1 - mos) < distance[neighbour]): if (
+                            # predecessor[neighbour] != None): np = self.nodes[predecessor[neighbour]] if (
+                            # predecessor[predecessor[neighbour]] != None): npp = self.nodes[predecessor[predecessor[
+                            # neighbour]]] else: npp = "None" else: np = "None" npp = "None" print("Neigh: " +
+                            # self.nodes[neighbour] + " N: " + self.nodes[node] + " MOS: " + str(mos) + " MH: " +
+                            # str(M[h][neighbour]) + " OP: " + np + " FOP: " + npp)
                             predecessor[neighbour] = node
                             MNext[h][neighbour] = bwAux
                             distance[neighbour] = bwAux
@@ -1938,7 +1933,7 @@ class BQoEPathController(ControllerBase):
         if dst == "all":
             destinations_array = ["cdn1", "cdn2", "cdn3", "ext1"]
             for dest in destinations_array:
-                sp = nx.shortest_path(graph, source=src, target=dest, weight='rtt')
+                sp = nx.shortest_path(graph, source=src, target=dest, weight='rtt', method="dijkstra")
                 splen = nx.shortest_path_length(graph, source=src, target=dest, weight='rtt')
                 print("[RYU] DEST: " + dest + " LEN: " + str(splen) + " PATH " + str(sp) + " MIN: " + str(min_splen))
                 if splen < min_splen:

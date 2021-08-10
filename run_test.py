@@ -321,10 +321,6 @@ def run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time
                             rtt_period_seconds, loss_period_seconds) -> None:
     save_pid(os.getpid(), "/tmp/pids_running.txt")
 
-    route = urllib.request.urlopen(f'http://{CONTROLLER_API_HOSTNAME}:{CONTROLLER_API_PORT}/bqoepath/'
-                                   f'pathtomanager-{agent_hostname}-{manager_hostname}').read()
-    print(route)
-
     if tp_period_seconds > 0:
         mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
                                                                         first_trigger_time_seconds,
