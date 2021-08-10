@@ -96,13 +96,40 @@ def create_switch_name(sp, lower_bound, switch_char) -> str:
     new_sp = new_sp + 1
     return f'{switch_char}{new_sp}'
 
+def switch_from_host(path):
+        ran_lower_bound = 1
+        ran_upper_bound = 20
+        metro_lower_bound = 21
+        metro_upper_bound = 25
+        access_lower_bound = 26
+        access_upper_bound = 29
+        core_lower_bound = 30
+        core_upper_bound = 33
+        internet_lower_bound = 34
+        internet_upper_bound = 34
+
+        path_first = path[0]
+        path_rest = path[1:]
+        switch_index = 0
+
+        if path_first == 'r':
+            switch_index = int(path_rest) + ran_lower_bound - 1
+        elif path_first == 'm' and path[1] != 'a':
+            switch_index = int(path_rest) + metro_lower_bound - 1
+        elif path_first == 'a':
+            switch_index = int(path_rest) + access_lower_bound - 1
+        elif path_first == 'c' and path[1] != 'd':
+            switch_index = int(path_rest) + core_lower_bound - 1
+        elif path_first == 'i':
+            switch_index = int(path_rest) + internet_lower_bound - 1
+
+        if switch_index > 0:
+            return 's' + str(switch_index)
+        else:
+            return path
 
 def calculate_ip(p) -> str:
-    if p == "src1":
-        return "10.0.0.249"
-    elif p == "src2":
-        return "10.0.0.250"
-    elif p == "cdn1":
+    if p == "cdn1":
         return "10.0.0.251"
     elif p == "cdn2":
         return "10.0.0.252"
@@ -118,10 +145,15 @@ def calculate_ip(p) -> str:
         return "10.0.0.243"
     elif p == "man4":
         return "10.0.0.244"
+    elif p == "src1":
+        return "10.0.0.249"
+    elif p == "src2":
+        return "10.0.0.250"
     else:
         pfirst = p[0]
-        if pfirst == "s":
-            prest = p[1:]
+        if pfirst in ['r', 'm', 'a', 'c', 'i', 's']:
+            prest = switch_from_host(p)[1:]
+            # prest = p[1:]
             ipfinal = 200 + int(prest)
             return f"10.0.0.{ipfinal}"
         elif pfirst == "u":
@@ -155,6 +187,8 @@ class Schedule:
         filename = f"/tmp/schedule-{self.uuid}.xml"
         _command = f"{m} {self.agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
                    f"100 -u {self.uuid} "
+        # print(self)
+        print(_command)
         os.system(_command)
         self.read_store_results()
         measurement_finish()
@@ -233,7 +267,7 @@ class Schedule:
             return True
 
     def __str__(self):
-        return f"Schedule [uuid={self.uuid}, metric={self.metric.names}]"
+        return f"Schedule [uuid={self.uuid}, agent={self.agent_hostname}, manager={self.manager_hostname}, metric={self.metric.names}]"
 
 
 _schedule_queue: list[Schedule] = list[Schedule]()
@@ -280,6 +314,8 @@ def measurement_service(agent_hostname: str, manager_hostname: str, first_trigge
     first_trigger_seconds = first_trigger_time_seconds + (3 + (random() % 20))
     print(f'Waiting for {first_trigger_seconds} s for stating this measure')
     time.sleep(first_trigger_seconds)
+
+    print(agent_hostname, manager_hostname, first_trigger_time_seconds, metric, period_in_seconds)
 
     time.sleep(period_in_seconds)
     while True:
@@ -358,7 +394,7 @@ def start_managers(managers: list[str] = None):
     for manager in managers:
         run_manager(manager)
     print("Started manager... Let's wait them to wake up")
-    time.sleep(60)
+    # time.sleep(60)
     print("Ok, Managers should be awake now. Let's get start the measurements!")
 
 
@@ -372,7 +408,7 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
         os.system(f'{m} {renamed_manager} killall -9 metricmanager')
         time.sleep(5)
     # Starts metric manager first
-    command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
+    command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
     print(command)
     os.system(command)
     # Run Netmetric Manager using subprocess
@@ -391,7 +427,7 @@ def find_managers(__file: str):
         __csv_reader = csv.reader(__measurement_profiles, delimiter=";")
         __managers = ([*{__row[1]
                          for __row_count, __row in enumerate(__csv_reader)
-                         if __row is not None and __row_count != 0}])
+                         if __row and __row_count != 0}])
         __managers.sort()
         return __managers
 
@@ -448,7 +484,7 @@ if __name__ == '__main__':
         # print(find_managers(file_input), len(find_managers(file_input)))
         start_managers(find_managers(file_input))
 
-        time.sleep(30)
+        #time.sleep(30)
 
         # Save parent's pid
         os.remove("/tmp/pids_running.txt")
