@@ -379,8 +379,8 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
     # manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
     #                                    preexec_fn=os.setsid)
     # manager_procs.append(manager_process)
-    time.sleep(20)
-    run_manager.core = run_manager.core + 1 if run_manager.core < MAX_THREADS else 0
+    time.sleep(5)
+    run_manager.core = run_manager.core + 1 if run_manager.core < (MAX_THREADS -1) else 0
 
 
 run_manager.core = 0
@@ -447,6 +447,8 @@ if __name__ == '__main__':
 
         start_managers(find_managers(file_input))
         # print(find_managers(file_input))
+
+        time.sleep(30)
 
         # Save parent's pid
         os.remove("/tmp/pids_running.txt")
