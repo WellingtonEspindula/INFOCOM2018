@@ -117,8 +117,10 @@ def find_link_pattern(line, __links, links_labels, pattern, switch_to_host: bool
 
 
 def export_csv(topology_info: list[LinkInfo]) -> None:
+    header = ["agent", "manager", "first-trigger-time", "polling-throughput-tcp", "polling-rtt", "polling-loss"]
     with open(CSV_FILE, 'w') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        csv_writer.writerow(header)
         for link in topology_info:
             csv_writer.writerow(link.measurement_profile())
             # csv_writer.writerow(link.pack_h1_h2())

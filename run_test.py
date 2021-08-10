@@ -445,8 +445,8 @@ if __name__ == '__main__':
         args = parser.parse_args()
         file_input = args.file
 
+        # print(find_managers(file_input), len(find_managers(file_input)))
         start_managers(find_managers(file_input))
-        # print(find_managers(file_input))
 
         time.sleep(30)
 
