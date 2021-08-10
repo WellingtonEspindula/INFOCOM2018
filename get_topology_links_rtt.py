@@ -1,11 +1,12 @@
 #!/usr/bin/env python3.9
 import csv
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 from typing import AnyStr
 
 TOPOLOGY_FILE = "Topo_DBR.py"
-CSV_FILE = "nm_static_results.csv"
+CSV_FILE = "links-measurement-profile.csv"
+
 
 @dataclass
 class LinkInfo:
@@ -19,6 +20,16 @@ class LinkInfo:
 
     def pack_h2_h1(self) -> list:
         return [self.host2, self.host1, self.delay, 0, self.bandwidth]
+
+    def measurement_profile(self):
+        if re.match(r'u\d+', self.host1):
+            ftt = 0.5
+        elif re.match(r'r\d+', self.host1):
+            ftt = 5
+        else:
+            ftt = 10
+        # ftt = 0.5 if (re.match(r'u\d+', __h1) is not None) else (5 (if re.match(r'r\d+', __h1) is not None) else 10)
+        return [self.host1, self.host2, ftt, 10, 1, 1]
 
 
 def rename_switch(switch_name: str) -> str:
@@ -71,7 +82,7 @@ def read_topology() -> list[LinkInfo]:
         compile(r"link_switch_to_host\(net, (u\d+|cdn\d+|man\d+), (s\d+), \d+, \d+, (?:True|False), "
                 r"(link[0-9]*_[kmg]bps(?:_[0-9]+){1,2}|linknodeg)\)")
 
-    links: list[LinkInfo] = list()
+    __links: list[LinkInfo] = list()
 
     with open(TOPOLOGY_FILE, "r") as topology:
         for line_number, line in enumerate(topology):
@@ -82,13 +93,13 @@ def read_topology() -> list[LinkInfo]:
 
                 links_labels.update({link_label: (link_bw, link_delay)})
 
-            find_link_pattern(line, links, links_labels, switch_to_switch_pattern, False)
-            find_link_pattern(line, links, links_labels, switch_to_host_pattern, True)
+            find_link_pattern(line, __links, links_labels, switch_to_switch_pattern, False)
+            find_link_pattern(line, __links, links_labels, switch_to_host_pattern, True)
 
-    return links
+    return __links
 
 
-def find_link_pattern(line, links, links_labels, pattern, switch_to_host: bool = False):
+def find_link_pattern(line, __links, links_labels, pattern, switch_to_host: bool = False):
     for match in re.finditer(pattern, line):
         switch1 = match.group(1)
         switch2 = match.group(2)
@@ -102,15 +113,16 @@ def find_link_pattern(line, links, links_labels, pattern, switch_to_host: bool =
         delay = float(link_info[1])
 
         link = LinkInfo(host1=source, host2=destine, bandwidth=bw, delay=delay)
-        links.append(link)
+        __links.append(link)
 
 
 def export_csv(topology_info: list[LinkInfo]) -> None:
     with open(CSV_FILE, 'w') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for link in topology_info:
-            csv_writer.writerow(link.pack_h1_h2())
-            csv_writer.writerow(link.pack_h2_h1())
+            csv_writer.writerow(link.measurement_profile())
+            # csv_writer.writerow(link.pack_h1_h2())
+            # csv_writer.writerow(link.pack_h2_h1())
 
 
 links = read_topology()

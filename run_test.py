@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.9
 import csv
+import multiprocessing
 import os
 import shutil
 import signal
@@ -19,7 +20,7 @@ from xml.etree import ElementTree
 m = "/home/mininet/mininet/util/m"
 manager_procs = []
 
-MAX_THREADS = 8
+MAX_THREADS = multiprocessing.cpu_count()
 
 CONTROLLER_API_HOSTNAME = "localhost"
 CONTROLLER_API_PORT = 8080
@@ -349,20 +350,21 @@ def run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time
             mes_thread.start()
 
 
-def start_managers():
+def start_managers(managers: list[str] = None):
+    if managers is None:
+        managers = ["man1", "man2", "man3", "man4"]
+
     print("Starting managers...")
     signal.signal(signal.SIGINT, interruption_handler)
-    run_manager("man1")
-    run_manager("man2")
-    run_manager("man3")
-    run_manager("man4")
+    for manager in managers:
+        run_manager(manager)
     print("Started manager... Let's wait them to wake up")
     time.sleep(60)
     print("Ok, Managers should be awake now. Let's get start the measurements!")
 
 
 def run_manager(manager_hostname: str, uses_manager: bool = True):
-    run_manager.core = run_manager.core + 1 if run_manager.core <= MAX_THREADS else run_manager.core
+    run_manager.core = run_manager.core + 1 if run_manager.core <= MAX_THREADS else 0
     renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
     manager_port_busy = is_manager_busy(renamed_manager)
     print(f"Is manager {renamed_manager} busy: {manager_port_busy}")
@@ -378,17 +380,24 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
     # Run Netmetric Manager using subprocess
     # manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
     #                                    preexec_fn=os.setsid)
-    time.sleep(20)
     # manager_procs.append(manager_process)
+    time.sleep(20)
 
 
 run_manager.core = 0
 
-if __name__ == '__main__':
-    # Save parent's pid
-    os.remove("/tmp/pids_running.txt")
-    save_pid(os.getpid(), "/tmp/pids_running.txt")
 
+def find_managers(__file: str):
+    with open(__file) as __measurement_profiles:
+        __csv_reader = csv.reader(__measurement_profiles, delimiter=";")
+        __managers = ([*{__row[1]
+                   for __row_count, __row in enumerate(__csv_reader)
+                   if __row is not None and __row_count != 0}])
+        __managers.sort()
+        return __managers
+
+
+if __name__ == '__main__':
     # Informing script arguments
     parser = ArgumentParser(
         description='Performs a repeated measure in a pair src-dst given period of each measure type')
@@ -427,30 +436,39 @@ if __name__ == '__main__':
         if start_manager:
             run_manager(manager_hostname)
 
+        # Save parent's pid
+        os.remove("/tmp/pids_running.txt")
+        save_pid(os.getpid(), "/tmp/pids_running.txt")
+
         run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
                                 rtt_period_seconds, loss_period_seconds)
     else:
         args = parser.parse_args()
         file_input = args.file
 
-        start_managers()
-
-        with open(file_input) as measurement_profiles:
-            csv_reader = csv.reader(measurement_profiles, delimiter=";")
-            for line_number, line in enumerate(csv_reader):
-
-                # Skip blank lines and header line
-                if line is not None and line_number != 0:
-                    # Read parameters from file
-                    agent_hostname = line[0]
-                    manager_hostname = line[1]
-                    first_trigger_time_seconds = float(line[2]) * 60
-                    tp_period_seconds = float(line[3]) * 60
-                    rtt_period_seconds = float(line[4]) * 60
-                    loss_period_seconds = float(line[5]) * 60
-
-                    run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds,
-                                            tp_period_seconds, rtt_period_seconds, loss_period_seconds)
+        print(find_managers(file_input))
+        # start_managers(find_managers(file_input))
+        #
+        # # Save parent's pid
+        # os.remove("/tmp/pids_running.txt")
+        # save_pid(os.getpid(), "/tmp/pids_running.txt")
+        #
+        # with open(file_input) as measurement_profiles:
+        #     csv_reader = csv.reader(measurement_profiles, delimiter=";")
+        #     for line_number, line in enumerate(csv_reader):
+        #
+        #         # Skip blank lines and header line
+        #         if line is not None and line_number != 0:
+        #             # Read parameters from file
+        #             agent_hostname = line[0]
+        #             manager_hostname = line[1]
+        #             first_trigger_time_seconds = float(line[2]) * 60
+        #             tp_period_seconds = float(line[3]) * 60
+        #             rtt_period_seconds = float(line[4]) * 60
+        #             loss_period_seconds = float(line[5]) * 60
+        #
+        #             run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds,
+        #                                     tp_period_seconds, rtt_period_seconds, loss_period_seconds)
 
     # Test zone
     # manager_hostname = "man1"
