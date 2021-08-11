@@ -1,12 +1,13 @@
 #!/usr/bin/env python3.9
 import csv
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import AnyStr
 
 TOPOLOGY_FILE = "Topo_DBR.py"
 CSV_FILE = "links-measurement-profile.csv"
 
+fft_count = 0
 
 @dataclass
 class LinkInfo:
@@ -14,6 +15,12 @@ class LinkInfo:
     host2: str
     bandwidth: float
     delay: float
+    ftt: float = field(init=False)
+
+    def __post_init__(self):
+        global fft_count
+        fft_count += 1
+        self.ftt = fft_count * 0.5
 
     def pack_h1_h2(self) -> list:
         return [self.host1, self.host2, self.delay, 0, self.bandwidth]
@@ -22,14 +29,7 @@ class LinkInfo:
         return [self.host2, self.host1, self.delay, 0, self.bandwidth]
 
     def measurement_profile(self):
-        if re.match(r'u\d+', self.host1):
-            ftt = 0.5
-        elif re.match(r'r\d+', self.host1):
-            ftt = 5
-        else:
-            ftt = 10
-        # ftt = 0.5 if (re.match(r'u\d+', __h1) is not None) else (5 (if re.match(r'r\d+', __h1) is not None) else 10)
-        return [self.host1, self.host2, ftt, 10, 1, 1]
+        return [self.host1, self.host2, self.ftt, -1, 20, 20]
 
 
 def rename_switch(switch_name: str) -> str:

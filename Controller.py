@@ -1605,7 +1605,7 @@ class BQoEPathApi(app_manager.RyuApp):
             if first == 'u':
                 ipfinal = host.split("u")[1]
                 return "10.0.0." + str(int(ipfinal))  # para remover os leading zeros
-            elif (first == 'r' or first == 'm' or first == 'a' or first == 'c' or first == 'i' or first == 's'):
+            elif first == 'r' or first == 'm' or first == 'a' or first == 'c' or first == 'i' or first == 's':
                 sn = self.switch_from_host(host)
                 print("LOCAL SN: " + sn)
                 restsn = sn[1:]
