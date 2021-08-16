@@ -10,7 +10,7 @@ import threading
 import time
 import uuid
 from argparse import ArgumentParser
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -173,7 +173,7 @@ def write_data_csv(filename: str, data: list) -> None:
     with open(filename, mode='a+') as file:
         file_writer = csv.writer(file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         file_writer.writerow(data)
-        # print("File saved")
+        # print("File saved"), field
 
 
 @dataclass
@@ -181,7 +181,10 @@ class Schedule:
     agent_hostname: str
     manager_hostname: str
     metric: Metric
-    uuid: str = str(uuid.uuid4())
+    uuid: str = field(init=False)
+
+    def __post_init__(self):
+        self.uuid = str(uuid.uuid4())
 
     def measure(self):
         filename = f"/tmp/schedule-{self.uuid}.xml"
@@ -191,7 +194,7 @@ class Schedule:
         print(_command)
         os.system(_command)
         self.read_store_results()
-        measurement_finish()
+        # measurement_finish()
 
     def __create(self, agent_hostname: str, manager_ip: str, port: int = 12001) -> str:
         plugins = "".join(
@@ -311,17 +314,17 @@ def measurement_service(agent_hostname: str, manager_hostname: str, first_trigge
     """
 
     # First of all, must wait the first trigger time
-    first_trigger_seconds = first_trigger_time_seconds + (3 + (random() % 20))
+    # first_trigger_seconds = first_trigger_time_seconds + (3 + (random() % 20))
+    first_trigger_seconds = first_trigger_time_seconds
     print(f'Waiting for {first_trigger_seconds} s for stating this measure')
     time.sleep(first_trigger_seconds)
 
-    print(agent_hostname, manager_hostname, first_trigger_time_seconds, metric, period_in_seconds)
-
-    time.sleep(period_in_seconds)
+    # time.sleep(period_in_seconds)
     while True:
         schedule = Schedule(agent_hostname, manager_hostname, metric)
         schedule.create_and_save()
-        enqueue_schedule(schedule)
+        # enqueue_schedule(schedule)
+        schedule.measure()
 
         time.sleep(period_in_seconds)
 
@@ -353,7 +356,39 @@ def save_pid(pid: int, pids_file: str) -> None:
         pfile.write(f"{pid}\n")
 
 
-def run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
+def run_unitary_measure(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
+                            rtt_period_seconds, loss_period_seconds) -> None:
+    save_pid(os.getpid(), "/tmp/pids_running.txt")
+
+    if tp_period_seconds > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                        first_trigger_time_seconds,
+                                                                        MetricTypes.THROUGHPUT_TCP.value,
+                                                                        tp_period_seconds,))
+        mes_thread.start()
+    if rtt_period_seconds == loss_period_seconds and rtt_period_seconds > 0:
+        mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                        first_trigger_time_seconds,
+                                                                        MetricTypes.UDP_PACK.value,
+                                                                        rtt_period_seconds,))
+        mes_thread.start()
+    else:
+        if rtt_period_seconds > 0:
+            mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                            first_trigger_time_seconds,
+                                                                            MetricTypes.RTT.value,
+                                                                            rtt_period_seconds,))
+            mes_thread.start()
+
+        if loss_period_seconds > 0:
+            mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                            first_trigger_time_seconds,
+                                                                            MetricTypes.LOSS.value,
+                                                                            loss_period_seconds,))
+            mes_thread.start()
+
+
+def run_repeated_measure(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
                             rtt_period_seconds, loss_period_seconds) -> None:
     save_pid(os.getpid(), "/tmp/pids_running.txt")
 
@@ -408,14 +443,14 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
         os.system(f'{m} {renamed_manager} killall -9 metricmanager')
         time.sleep(5)
     # Starts metric manager first
-    command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
+    command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
     print(command)
     os.system(command)
     # Run Netmetric Manager using subprocess
     # manager_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
     #                                    preexec_fn=os.setsid)
     # manager_procs.append(manager_process)
-    time.sleep(5)
+    time.sleep(1)
     run_manager.core = run_manager.core + 1 if run_manager.core < (MAX_THREADS -1) else 0
 
 
@@ -439,6 +474,7 @@ if __name__ == '__main__':
     # parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
     # parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
     parser.add_argument("-f", "--file", help="Open from a file", type=str, nargs='?')
+    parser.add_argument("--once", help="Runs just once", action='store_true')
     opts, rem_args = parser.parse_known_args()
     if opts.file is None:
         parser.add_argument("-m", "--manager", help="Uses Manager", action="store_true")
@@ -462,6 +498,7 @@ if __name__ == '__main__':
         manager_hostname = args.manager_hostname
         uses_manager = args.manager
         start_manager = args.start_metricman
+        runs_once = args.once
 
         if not os.path.exists("results"):
             os.makedirs("results")
@@ -472,10 +509,11 @@ if __name__ == '__main__':
             run_manager(manager_hostname)
 
         # Save parent's pid
-        os.remove("/tmp/pids_running.txt")
+        if os.path.exists("/tmp/pids_running"):
+            os.remove("/tmp/pids_running.txt")
         save_pid(os.getpid(), "/tmp/pids_running.txt")
 
-        run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
+        run_repeated_measure(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
                                 rtt_period_seconds, loss_period_seconds)
     else:
         args = parser.parse_args()
@@ -487,7 +525,8 @@ if __name__ == '__main__':
         #time.sleep(30)
 
         # Save parent's pid
-        os.remove("/tmp/pids_running.txt")
+        if os.path.exists("/tmp/pids_running"):
+            os.remove("/tmp/pids_running.txt")
         save_pid(os.getpid(), "/tmp/pids_running.txt")
 
         with open(file_input) as measurement_profiles:
@@ -504,7 +543,7 @@ if __name__ == '__main__':
                     rtt_period_seconds = float(line[4]) * 60
                     loss_period_seconds = float(line[5]) * 60
 
-                    run_unitary_measurement(agent_hostname, manager_hostname, first_trigger_time_seconds,
+                    run_repeated_measure(agent_hostname, manager_hostname, first_trigger_time_seconds,
                                             tp_period_seconds, rtt_period_seconds, loss_period_seconds)
 
     # Test zone

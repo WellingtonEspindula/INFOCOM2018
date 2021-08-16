@@ -7,6 +7,7 @@ from typing import AnyStr
 TOPOLOGY_FILE = "Topo_DBR.py"
 CSV_FILE = "links-measurement-profile.csv"
 
+TIME_MULTIPLIER = 0.005
 fft_count = 0
 
 @dataclass
@@ -20,7 +21,7 @@ class LinkInfo:
     def __post_init__(self):
         global fft_count
         fft_count += 1
-        self.ftt = fft_count * 0.5
+        self.ftt = fft_count * TIME_MULTIPLIER
 
     def pack_h1_h2(self) -> list:
         return [self.host1, self.host2, self.delay, 0, self.bandwidth]
@@ -29,7 +30,7 @@ class LinkInfo:
         return [self.host2, self.host1, self.delay, 0, self.bandwidth]
 
     def measurement_profile(self):
-        return [self.host1, self.host2, self.ftt, -1, 20, 20]
+        return [self.host1, self.host2, self.ftt, -1, 40, -1]
 
 
 def rename_switch(switch_name: str) -> str:
