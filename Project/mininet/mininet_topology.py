@@ -14,7 +14,7 @@ from Project.common.main_topology import MAIN_TOPOLOGY
 
 
 def add_rule(switch_name, required_ip, port_out):
-    route_param = 'priority=1024,ip,nw_dst=' + required_ip + ',actions=output:' + port_out
+    route_param = f'priority=1024,ip,nw_dst={required_ip},actions=output:{port_out}'
     logging.debug(route_param)
     p = Popen(['ovs-ofctl', 'add-flow', switch_name, route_param, '-O OpenFlow13'])
     p.wait()
@@ -39,13 +39,13 @@ def evaluate_topology():
     for _switch in MAIN_TOPOLOGY.switches:
         net.addSwitch(_switch)
 
-    for _hostname, _host in MAIN_TOPOLOGY.hosts:
+    for _hostname, _host in MAIN_TOPOLOGY.hosts.items():
         net.addHost(_hostname, ip=_host.ip_address, mac=_host.mac_address)
 
     for _link in MAIN_TOPOLOGY.links:
-        net.addLink(_link.switch.name, _link.switch_port, _link.network_element.name, _link.element_port,
-                    _link.degradation.to_dict())
-
+        net.addLink(_link.switch.name, _link.network_element.name,
+                    _link.switch_port.port_number, _link.element_port.port_number,
+                    **_link.degradation.to_dict())
     net.start()
 
     deploy_flow_rules(MAIN_TOPOLOGY.retrieve_rules())

@@ -161,7 +161,7 @@ user_hosts = {name: Host(name=name, ip_address=f'10.0.0.{i}',
 MAIN_TOPOLOGY.append_hosts(user_hosts)
 for i in RAN_RANGE:
     for j in range(1, (USERS_PER_RAN + 1)):
-        host_count = ((i-1) * USERS_PER_RAN) + j
+        host_count = ((i - 1) * USERS_PER_RAN) + j
         MAIN_TOPOLOGY.create_link_switch_host(f's{i}', j, f'u{host_count:03d}', 0)
 
 # user_links = [for name, host in user_hosts]
