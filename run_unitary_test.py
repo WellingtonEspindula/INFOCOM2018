@@ -322,13 +322,18 @@ def measurement_service(agent_hostname: str, manager_hostname: str, first_trigge
     time.sleep(first_trigger_seconds)
 
     # time.sleep(period_in_seconds)
-    while True:
+    if period_in_seconds > 0:
+        while True:
+            schedule = Schedule(agent_hostname, manager_hostname, metric)
+            schedule.create_and_save()
+            # enqueue_schedule(schedule)
+            schedule.measure()
+
+            time.sleep(period_in_seconds)
+    else:
         schedule = Schedule(agent_hostname, manager_hostname, metric)
         schedule.create_and_save()
-        # enqueue_schedule(schedule)
         schedule.measure()
-
-        time.sleep(period_in_seconds)
 
 
 def is_manager_busy(manager: str):
@@ -358,68 +363,15 @@ def save_pid(pid: int, pids_file: str) -> None:
         pfile.write(f"{pid}\n")
 
 
-def run_unitary_measure(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
-                        rtt_period_seconds, loss_period_seconds) -> None:
+def run_unitary_measure(agent_hostname, manager_hostname, first_trigger_time_seconds) -> None:
     save_pid(os.getpid(), "/tmp/pids_running.txt")
 
-    if tp_period_seconds > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                        first_trigger_time_seconds,
-                                                                        MetricTypes.THROUGHPUT_TCP.value,
-                                                                        tp_period_seconds,))
-        mes_thread.start()
-    if rtt_period_seconds == loss_period_seconds and rtt_period_seconds > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                        first_trigger_time_seconds,
-                                                                        MetricTypes.UDP_PACK.value,
-                                                                        rtt_period_seconds,))
-        mes_thread.start()
-    else:
-        if rtt_period_seconds > 0:
-            mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                            first_trigger_time_seconds,
-                                                                            MetricTypes.RTT.value,
-                                                                            rtt_period_seconds,))
-            mes_thread.start()
-
-        if loss_period_seconds > 0:
-            mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                            first_trigger_time_seconds,
-                                                                            MetricTypes.LOSS.value,
-                                                                            loss_period_seconds,))
-            mes_thread.start()
-
-
-def run_repeated_measure(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
-                         rtt_period_seconds, loss_period_seconds) -> None:
-    save_pid(os.getpid(), "/tmp/pids_running.txt")
-
-    if tp_period_seconds > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                        first_trigger_time_seconds,
-                                                                        MetricTypes.THROUGHPUT_TCP.value,
-                                                                        tp_period_seconds,))
-        mes_thread.start()
-    if rtt_period_seconds == loss_period_seconds and rtt_period_seconds > 0:
-        mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                        first_trigger_time_seconds,
-                                                                        MetricTypes.UDP_PACK.value,
-                                                                        rtt_period_seconds,))
-        mes_thread.start()
-    else:
-        if rtt_period_seconds > 0:
-            mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                            first_trigger_time_seconds,
-                                                                            MetricTypes.RTT.value,
-                                                                            rtt_period_seconds,))
-            mes_thread.start()
-
-        if loss_period_seconds > 0:
-            mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                            first_trigger_time_seconds,
-                                                                            MetricTypes.LOSS.value,
-                                                                            loss_period_seconds,))
-            mes_thread.start()
+    mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                                    first_trigger_time_seconds,
+                                                                    MetricTypes.RTT.value,
+                                                                    -1,))
+    mes_thread.start()
+    mes_thread.join()
 
 
 def start_managers(managers: list[str] = None):
@@ -484,10 +436,6 @@ if __name__ == '__main__':
                             help="How long it takes to start the measures")
         parser.add_argument("agent_hostname", type=str, help="Agent hostname")
         parser.add_argument("manager_hostname", type=str, help="Manager hostname")
-        parser.add_argument("throughput_tcp_period", type=float,
-                            help="Throughput TCP measurement repeating period (min)")
-        parser.add_argument("rtt_period", type=float, help="Rtt measurement repeating period (min)")
-        parser.add_argument("loss_period", type=float, help="Loss measurement repeating period (min)")
         args = parser.parse_args(rem_args, opts)
 
         # Read parameters from input
@@ -513,8 +461,8 @@ if __name__ == '__main__':
             os.remove("/tmp/pids_running.txt")
         save_pid(os.getpid(), "/tmp/pids_running.txt")
 
-        run_repeated_measure(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
-                             rtt_period_seconds, loss_period_seconds)
+        # run_repeated_measure(agent_hostname, manager_hostname, first_trigger_time_seconds, tp_period_seconds,
+        #                      rtt_period_seconds, loss_period_seconds)
     else:
         args = parser.parse_args()
         file_input = args.file
@@ -539,14 +487,7 @@ if __name__ == '__main__':
                     agent_hostname = line[0]
                     manager_hostname = line[1]
                     first_trigger_time_seconds = float(line[2]) * 60
-                    tp_period_seconds = float(line[3]) * 60
-                    rtt_period_seconds = float(line[4]) * 60
-                    loss_period_seconds = float(line[5]) * 60
 
-                    run_repeated_measure(agent_hostname, manager_hostname, first_trigger_time_seconds,
-                                         tp_period_seconds, rtt_period_seconds, loss_period_seconds)
+                    run_unitary_measure(agent_hostname, manager_hostname, first_trigger_time_seconds)
 
-    # Test zone
-    # manager_hostname = "man1"
-    # agent_hostname = "u001"
-    # measurement_service(MetricTypes.RTT.value, 0.5)
+        print("Measurements should be over!")
