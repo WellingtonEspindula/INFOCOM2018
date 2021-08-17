@@ -136,10 +136,10 @@ def evaluate_topology():
     cdn3 = simple_create_host(net, 'cdn3', '10.0.0.253', '00:04:00:00:02:53')
     ext1 = simple_create_host(net, 'ext1', '10.0.0.254', '00:04:00:00:02:54')
 
-    man1 = simple_create_host(net, 'man1', '10.0.0.241', '00:04:00:00:02:51')
-    man2 = simple_create_host(net, 'man2', '10.0.0.242', '00:04:00:00:02:52')
-    man3 = simple_create_host(net, 'man3', '10.0.0.243', '00:04:00:00:02:53')
-    man4 = simple_create_host(net, 'man4', '10.0.0.244', '00:04:00:00:02:54')
+    man1 = simple_create_host(net, 'man1', '10.0.0.241', '00:04:00:00:02:41')
+    man2 = simple_create_host(net, 'man2', '10.0.0.242', '00:04:00:00:02:42')
+    man3 = simple_create_host(net, 'man3', '10.0.0.243', '00:04:00:00:02:43')
+    man4 = simple_create_host(net, 'man4', '10.0.0.244', '00:04:00:00:02:44')
 
     # 1.2. CREATING LINKS
     link_switch_to_host(net, cdn1, s25, 0, 99, False, link100_mbps_0_5)

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from Project.schedule import Schedule
+from Project.measurement.schedule import Schedule
 
 _schedule_queue: list[Schedule] = list[Schedule]()
 _current_schedule: Optional[Schedule] = None

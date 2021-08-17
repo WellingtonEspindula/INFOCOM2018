@@ -1,3 +1,5 @@
+#!/usr/bin/env ryu-manager
+
 # Projeto Final - Redes de Computadores I - CMP182 - 2016 - UFRGS
 # Professor: Luciano Paschoal Gaspary
 # Controlador para OpenFlow - Best QoE Path (BQoEP) - Seletor de melhor caminho baseado em predicao de QoE
@@ -1704,9 +1706,11 @@ class BQoEPathApi(app_manager.RyuApp):
                 continue
             refnode = (regSwitch.match(line)).group(1)
             connections = line[8:]
+            # print(refnode, connections)
             self.edges_ports.setdefault(refnode, {})
             for conn in reg.findall(connections):
                 self.edges_ports[refnode][conn[1]] = int(conn[0])
+                print(f'self.edges_ports[{refnode=}][{conn[1]=}] = {conn[0]=}')
                 self.elist.append((refnode, conn[1])) if (conn[1], refnode) not in self.elist else None
 
     # Descr: Function that create and sends arp message

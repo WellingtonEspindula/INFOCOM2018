@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from xml.etree import ElementTree
 
-from Project import host_utils as hu
-from Project.metric import Metric
-from Project.result import Result
-from Project import queue_manager as qm
+from Project.common import host_utils as hu
+from Project.common.constants import MININET_M
+from Project.measurement.metric import Metric
+from Project.measurement import queue_manager as qm
 
 
 @dataclass
@@ -21,7 +21,7 @@ class Schedule:
 
     def measure(self):
         filename = f"/tmp/schedule-{self.uuid}.xml"
-        _command = f"{m} {self.agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
+        _command = f"{MININET_M} {self.agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
                    f"100 -u {self.uuid} "
         os.system(_command)
         self.read_store_results()
@@ -76,8 +76,10 @@ class Schedule:
         current_timestamp = str(datetime.now())
         if self.metric is not None:
             for name in self.metric.names:
-                upload_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/upavg", "")
-                download_avg = root.findtext(f"./ativas[@metrica=\"{name}\"]/downavg", "")
+                # noinspection PyTypeChecker
+                upload_avg = root.findtext(f'./ativas[@metrica="{name}"]/upavg', '')
+                # noinspection PyTypeChecker
+                download_avg = root.findtext(f'./ativas[@metrica="{name}"]/downavg', '')
 
                 data = [
                     self.agent_hostname,
@@ -100,5 +102,5 @@ class Schedule:
             file_writer.writerow(data)
             return True
 
-    def __str__(self):
-        return f"Schedule [uuid={self.uuid}, metric={self.metric.names}]"
+    def __repr__(self):
+        return f"Schedule [{self.uuid=}, {self.agent_hostname=}, {self.manager_hostname=}, {self.metric.names=}]"

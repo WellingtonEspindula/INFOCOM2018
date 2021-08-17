@@ -4,8 +4,8 @@ import csv
 from dataclasses import dataclass
 from datetime import datetime
 
-from Project.metric import Metric
-from Project.schedule import Schedule
+from Project.measurement.metric import Metric
+from Project.measurement.schedule import Schedule
 
 
 @dataclass
