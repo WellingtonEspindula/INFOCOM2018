@@ -92,6 +92,10 @@ class Link:
     is_aux: bool
     degradation: Degradation
 
+    def __repr__(self):
+        return f'{self.switch.name}:{self.switch_port.port_number}-' \
+               f'{self.network_element.name}:{self.element_port.port_number}'
+
 
 @dataclass
 class Topology:
