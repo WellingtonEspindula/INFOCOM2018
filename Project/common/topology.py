@@ -117,7 +117,7 @@ class Topology:
         self.links.append(link)
 
     def create_link_switch_host(self, switch_name: str, switch_port: int, host_name: str, host_port: int,
-                                degradation: Degradation = LinkTypes.LINK_NO_DEGRADATION.value, 
+                                degradation: Degradation = LinkTypes.LINK_NO_DEGRADATION.value,
                                 is_aux: bool = False) -> None:
         __switch = self.switches.get(switch_name)
         __host = self.hosts.get(host_name)
@@ -160,9 +160,18 @@ class Topology:
         return self.hosts.get(host_name)
 
     def retrieve_graph(self) -> dict[dict[int]]:
+        """ Returns a graph in a adjacency matrix format weighted by connection port number """
         return {link.switch.name: {link.network_element.name: link.switch_port.port_number} for link in self.links}
 
+    def retrieve_edge_list(self) -> list[tuple[str, str]]:
+        edge_list: list[tuple[str, str]] = []
+        for link in self.links:
+            if (link.network_element.name, link.switch.name) not in edge_list:
+                edge_list.append((link.switch.name, link.network_element.name))
+        return edge_list
+
     def retrieve_rules(self) -> list[dict[str, str]]:
+        """ Returns a list of link's dictionary which has 'name', 'ip' and 'port' keys """
         rules_map: list[dict[str, str]] = []
         for link in self.links:
             if isinstance(link.network_element, Host):

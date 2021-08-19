@@ -1383,11 +1383,11 @@ class BQoEPathController(ControllerBase):
         for i in range(0, (len(humanmin_sp) - 2)):
             index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
             index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
-            if self.bqoe_path_spp.bw[index1][index2] < final_tp:
-                final_tp = self.bqoe_path_spp.bw[index1][index2]
-            self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] - BW_BITRATE
-            if self.bqoe_path_spp.bw[index1][index2] < 0:
-                self.bqoe_path_spp.bw[index1][index2] = 0.0
+            if self.bqoe_path_spp.bandwidths[index1][index2] < final_tp:
+                final_tp = self.bqoe_path_spp.bandwidths[index1][index2]
+            self.bqoe_path_spp.bandwidths[index1][index2] = self.bqoe_path_spp.bandwidths[index1][index2] - BW_BITRATE
+            if self.bqoe_path_spp.bandwidths[index1][index2] < 0:
+                self.bqoe_path_spp.bandwidths[index1][index2] = 0.0
 
         result = dict(mos=final_mos, tp=final_tp, dst=humanmin_sp[0],
                       dest_ip=self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), path=humanmin_sp)
@@ -1484,8 +1484,8 @@ class BQoEPathController(ControllerBase):
         for i in range(0, (len(humanmin_sp) - 2)):
             index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
             index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
-            if self.bqoe_path_spp.bw[index1][index2] < final_tp:
-                final_tp = self.bqoe_path_spp.bw[index1][index2]
+            if self.bqoe_path_spp.bandwidths[index1][index2] < final_tp:
+                final_tp = self.bqoe_path_spp.bandwidths[index1][index2]
             # self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] - BW_BITRATE
             # if self.bqoe_path_spp.bw[index1][index2] < 0:
             #    self.bqoe_path_spp.bw[index1][index2] = 0.0
@@ -1536,7 +1536,7 @@ class BQoEPathController(ControllerBase):
         for u, v, d in graph.edges(data=True):
             p1 = self.bqoe_path_spp.host_from_switch(u)
             p2 = self.bqoe_path_spp.host_from_switch(v)
-            d['bw'] = 1 / (self.bqoe_path_spp.bw[self.bqoe_path_spp.nodes.index(p1)][
+            d['bw'] = 1 / (self.bqoe_path_spp.bandwidths[self.bqoe_path_spp.nodes.index(p1)][
                                self.bqoe_path_spp.nodes.index(p2)] + 1.0)
         #   if (u == p1 and v == p2) or (u == p2 and v == p1):
         #        d['rtt'] = float(w)
@@ -1576,8 +1576,8 @@ class BQoEPathController(ControllerBase):
         for i in range(0, (len(humanmin_sp) - 2)):
             index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
             index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
-            if self.bqoe_path_spp.bw[index1][index2] < final_tp:
-                final_tp = self.bqoe_path_spp.bw[index1][index2]
+            if self.bqoe_path_spp.bandwidths[index1][index2] < final_tp:
+                final_tp = self.bqoe_path_spp.bandwidths[index1][index2]
             # self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] - BW_BITRATE
             # if self.bqoe_path_spp.bw[index1][index2] < 0:
             #    self.bqoe_path_spp.bw[index1][index2] = 0.0
