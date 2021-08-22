@@ -195,8 +195,8 @@ class Schedule:
                    f"100 -u {self.uuid} "
         # print(self)
         print(_command)
-        # os.system(_command)
-        time.sleep(0.42)
+        os.system(_command)
+        # time.sleep(0.42)
         self.read_store_results()
         # measurement_finish()
 
@@ -315,10 +315,12 @@ _finished_meas_services: dict[int, Thread] = {}
 
 
 def measurement_service_started(meas_service_thread: Thread) -> None:
+    print(f'Added {meas_service_thread.ident=} to list')
     _active_meas_services.update({meas_service_thread.ident: meas_service_thread})
 
 
 def measurement_service_finished(meas_service_thread: Thread) -> None:
+    print(f'Removed {meas_service_thread.ident=} to list')
     _active_meas_services.pop(meas_service_thread.ident)
     _finished_meas_services.update({meas_service_thread.ident: meas_service_thread})
 
@@ -395,6 +397,7 @@ def run_unitary_measure(agent_hostname, manager_hostname, first_trigger_time_sec
                                                           MetricTypes.RTT.value,
                                                           -1,))
     mes_thread.start()
+    measurement_service_started(mes_thread)
 
 
 def start_managers(managers: list[str] = None):
