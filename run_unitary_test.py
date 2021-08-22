@@ -7,6 +7,7 @@ import signal
 import subprocess
 import sys
 import threading
+from threading import Thread
 import time
 import uuid
 from argparse import ArgumentParser
@@ -194,7 +195,8 @@ class Schedule:
                    f"100 -u {self.uuid} "
         # print(self)
         print(_command)
-        os.system(_command)
+        # os.system(_command)
+        time.sleep(0.42)
         self.read_store_results()
         # measurement_finish()
 
@@ -308,6 +310,27 @@ def measurement_finish() -> None:
     rotate()
 
 
+_active_meas_services: dict[int, Thread] = {}
+_finished_meas_services: dict[int, Thread] = {}
+
+
+def measurement_service_started(meas_service_thread: Thread) -> None:
+    _active_meas_services.update({meas_service_thread.ident: meas_service_thread})
+
+
+def measurement_service_finished(meas_service_thread: Thread) -> None:
+    _active_meas_services.pop(meas_service_thread.ident)
+    _finished_meas_services.update({meas_service_thread.ident: meas_service_thread})
+
+    if are_all_measurement_service_finished():
+        print("All measurements are finished. Let's finish it all")
+        sys.exit(0)
+
+
+def are_all_measurement_service_finished() -> bool:
+    return len(_active_meas_services) == 0 and len(_finished_meas_services) > 0
+
+
 def measurement_service(agent_hostname: str, manager_hostname: str, first_trigger_time_seconds,
                         metric: Metric, period_in_seconds: float):
     """
@@ -334,6 +357,7 @@ def measurement_service(agent_hostname: str, manager_hostname: str, first_trigge
         schedule = Schedule(agent_hostname, manager_hostname, metric)
         schedule.create_and_save()
         schedule.measure()
+    measurement_service_finished(threading.current_thread())
 
 
 def is_manager_busy(manager: str):
@@ -366,12 +390,11 @@ def save_pid(pid: int, pids_file: str) -> None:
 def run_unitary_measure(agent_hostname, manager_hostname, first_trigger_time_seconds) -> None:
     save_pid(os.getpid(), "/tmp/pids_running.txt")
 
-    mes_thread = threading.Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
-                                                                    first_trigger_time_seconds,
-                                                                    MetricTypes.RTT.value,
-                                                                    -1,))
+    mes_thread = Thread(target=measurement_service, args=(agent_hostname, manager_hostname,
+                                                          first_trigger_time_seconds,
+                                                          MetricTypes.RTT.value,
+                                                          -1,))
     mes_thread.start()
-    mes_thread.join()
 
 
 def start_managers(managers: list[str] = None):
