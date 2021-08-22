@@ -2,6 +2,7 @@
 import csv
 import multiprocessing
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -326,6 +327,7 @@ def measurement_service_finished(meas_service_thread: Thread) -> None:
 
     if are_all_measurement_service_finished():
         print("All measurements are finished. Let's finish it all")
+        kill_all_managers()
         sys.exit(0)
 
 
@@ -362,7 +364,10 @@ def measurement_service(agent_hostname: str, manager_hostname: str, first_trigge
     measurement_service_finished(threading.current_thread())
 
 
-def is_manager_busy(manager: str):
+def is_manager_busy(manager: str) -> Optional[int]:
+    """
+    Returns if a manager port is busy (metricmanager already load), the process' pid
+    """
     manager_port = "12055"
     netstat_results = subprocess.Popen(f"{m} {manager} netstat -anp", shell=True, stdout=subprocess.PIPE).stdout
     netstat_results = netstat_results.read().decode().split('\n')  # Separates lines
@@ -370,18 +375,22 @@ def is_manager_busy(manager: str):
     netstat_results.pop(0)  # The second one
     for result in netstat_results:
         formatted_result = [r for r in result.replace(' \t', '').split(' ') if r != '']
-        if len(formatted_result) >= 4 and formatted_result[3].find(manager_port) != -1:
-            return True
-    return False
+        if len(formatted_result) >= 7 and formatted_result[3].find(manager_port) != -1:
+            return int(re.match(r'(\d+)/\w+', formatted_result[6]).group(1))
+    return None
 
 
 def interruption_handler(sig, frame):
     print('Sig INT detected!')
     print('Killing all Managers processes...')
+    kill_all_managers()
+    sys.exit(0)
+
+
+def kill_all_managers():
     for man_proc in manager_procs:
         print(f'Sig KILL send to [PID={man_proc.pid}]')
         os.killpg(man_proc.pid, signal.SIGTERM)
-    sys.exit(0)
 
 
 def save_pid(pid: int, pids_file: str) -> None:
@@ -415,12 +424,12 @@ def start_managers(managers: list[str] = None):
 
 def run_manager(manager_hostname: str, uses_manager: bool = True):
     renamed_manager = manager_hostname if uses_manager else rename_switch(manager_hostname)
-    manager_port_busy = is_manager_busy(renamed_manager)
-    print(f"Is manager {renamed_manager} busy: {manager_port_busy}")
-    while manager_port_busy:
-        manager_port_busy = is_manager_busy(renamed_manager)
+    pid_manager_port_busy = is_manager_busy(renamed_manager)
+    print(f"Is manager {renamed_manager} busy: {pid_manager_port_busy is not None}")
+    while pid_manager_port_busy is not None:
+        pid_manager_port_busy = is_manager_busy(renamed_manager)
         print(f"Waiting for manager {renamed_manager} free the port up...")
-        os.system(f'{m} {renamed_manager} killall -9 metricmanager')
+        os.system(f'{m} {renamed_manager} kill -9 {pid_manager_port_busy}')
         time.sleep(5)
     # Starts metric manager first
     command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
