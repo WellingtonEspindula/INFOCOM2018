@@ -1,4 +1,6 @@
 ryu==4.30
 networkx>=2.5.1
+gevent
+greenlet>=1.1.1
 eventlet==0.30.2
 mininet
