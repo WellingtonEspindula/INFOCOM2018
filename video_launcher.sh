@@ -11,7 +11,7 @@ bash clean_videos.sh
 status="NO_SNAPSHOT"
 while [ "$status" = "NO_SNAPSHOT" ]
 do
-    curl -X GET http://127.0.0.1:8080/bqoepath/deploybestqoepath-test-all > /tmp/deploy-response-test.json 2> /dev/null
+    curl -X GET http://127.0.0.1:8080/bqoepath/bestqoepath-test-all > /tmp/deploy-response-test.json 2> /dev/null
     status=$(cat /tmp/deploy-response-test.json | grep path | tr -d ' \t' | cut -d ":" -f 2 | cut -d',' -f 1 | sed s/\"//g)
     sleep 0.5
 done
@@ -25,7 +25,7 @@ do
   destination=''
   destination_control=0
 
-  curl -X GET http://127.0.0.1:8080/bqoepath/admweights-"$host"-all > /tmp/deploy-response-"$host".json 2> /dev/null
+  curl -X GET http://127.0.0.1:8080/bqoepath/shortestpath-"$host"-all > /tmp/deploy-response-"$host".json 2> /dev/null
   UUID=$(uuid)
 
   destination=$(cat /tmp/deploy-response-"$host".json | grep dest_ip | tr -d ' \t' | cut -d ":" -f 2 | cut -d',' -f 1 | sed s/\"//g)

@@ -6,6 +6,7 @@ from typing import AnyStr
 
 TOPOLOGY_FILE = "Topo_DBR.py"
 CSV_FILE = "links-measurement-profile.csv"
+#CSV_FILE = "rtt_theorical_links.csv"
 
 TIME_MULTIPLIER = 0.005
 fft_count = 0
@@ -74,13 +75,13 @@ def read_topology() -> list[LinkInfo]:
     links_pattern = re. \
         compile(r"(link[0-9]*_[kmg]bps(_\d+){1,2}) = {'bw': ([0-9]*), 'delay': '((\d+)|(\d+\.\d+))ms'}")
 
-    links_labels = {"linknodeg": ("0", "inf")}
+    links_labels = {"linknodeg": ("inf", "0")}
 
     switch_to_switch_pattern = re. \
         compile(r"link_switch_to_switch\(net, (s\d+), (s\d+), \d+, \d+, (link[0-9]*_[kmg]bps(?:_[0-9]+){1,2})\)")
 
     switch_to_host_pattern = re. \
-        compile(r"link_switch_to_host\(net, (u\d+|cdn\d+|man\d+), (s\d+), \d+, \d+, (?:True|False), "
+        compile(r"link_switch_to_host\(net, (u\d+|cdn\d+|man\d+|ext\d+), (s\d+), \d+, \d+, (?:True|False), "
                 r"(link[0-9]*_[kmg]bps(?:_[0-9]+){1,2}|linknodeg)\)")
 
     __links: list[LinkInfo] = list()
@@ -124,8 +125,8 @@ def export_csv(topology_info: list[LinkInfo]) -> None:
         csv_writer.writerow(header)
         for link in topology_info:
             csv_writer.writerow(link.measurement_profile())
-            # csv_writer.writerow(link.pack_h1_h2())
-            # csv_writer.writerow(link.pack_h2_h1())
+            #csv_writer.writerow(link.pack_h1_h2())
+            #csv_writer.writerow(link.pack_h2_h1())
 
 
 links = read_topology()

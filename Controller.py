@@ -454,7 +454,7 @@ class BQoEPathApi(app_manager.RyuApp):
     def readNmCsv(self):
         auxSet = set()
 
-        csvFile = "nm_static_results.csv"
+        csvFile = "link_last_results.csv"
         countControlFile = "count_control.csv"
 
         fin = open(csvFile, "r")
@@ -466,6 +466,7 @@ class BQoEPathApi(app_manager.RyuApp):
 
         self.nodes = list(auxSet)
         self.numNodes = len(self.nodes)
+        print(sorted(self.nodes), self.numNodes)
 
         self.links = [[0 for x in range(len(self.nodes))] for y in range(len(self.nodes))]
         self.rtt = [[0 for x in range(len(self.nodes))] for y in range(len(self.nodes))]
@@ -502,8 +503,7 @@ class BQoEPathApi(app_manager.RyuApp):
                 if brute_bw == 0.0:
                     brute_bw = 1.0
                 self.bw[index1][index2] = brute_bw / ATENUATION_RATE  # up
-                cc.write(self.nodes[index1] + ";" + self.nodes[index2] + ";" + str(
-                    int(self.bw[index1][index2] / 2000000.0)) + "\n")
+                cc.write(f'{self.nodes[index1]};{self.nodes[index2]};{int(self.bw[index1][index2] / 2000000.0)}\n'.encode())
 
             else:
                 print("error -- something went wrong...")
@@ -659,7 +659,7 @@ class BQoEPathApi(app_manager.RyuApp):
     def localBestQoePath(self, src, dst):
         _auxSet = set()
 
-        _csvFile = "nm_static_results.csv"
+        _csvFile = "link_last_results.csv"
 
         _fin = open(_csvFile, "r")
 
@@ -1811,8 +1811,8 @@ class BQoEPathController(ControllerBase):
                         index2 = self.bqoe_path_spp.nodes.index(n2)
                         index1 = self.bqoe_path_spp.nodes.index(n1)
                         # print ("CBW: " + str(self.bqoe_path_spp.bw[index1][index2]) + " MBW " + str(minbw))
-                        if self.bqoe_path_spp.bandwidths[index1][index2] < min_bandwidth:
-                            min_bandwidth = self.bqoe_path_spp.bandwidths[index1][index2]
+                        if self.bqoe_path_spp.bw[index1][index2] < min_bandwidth:
+                            min_bandwidth = self.bqoe_path_spp.bw[index1][index2]
                         sum_rtt = sum_rtt + self.bqoe_path_spp.rtt[index1][index2]
 
                     # print("B: " + str(minbw) + " R: " + str(sumrtt))
@@ -1874,17 +1874,17 @@ class BQoEPathController(ControllerBase):
             index2 = self.bqoe_path_spp.nodes.index(humanpath[i + 1])
             index1 = self.bqoe_path_spp.nodes.index(humanpath[i])
             self.bqoe_path_spp.numFlowsRound[index1][index2] = self.bqoe_path_spp.numFlowsRound[index1][index2] + 1
-            if self.bqoe_path_spp.bandwidths[index1][index2] > 2 * BW_BITRATE:
-                self.bqoe_path_spp.bandwidths[index1][index2] = self.bqoe_path_spp.bandwidths[index1][
+            if self.bqoe_path_spp.bw[index1][index2] > 2 * BW_BITRATE:
+                self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][
                                                             index2] - BW_BITRATE  # indentar isso com o if acima
             # if self.bw[index1][index2] < 0:
             #    self.bw[index1][index2] = 10.0
-            elif self.bqoe_path_spp.bandwidths[index1][index2] > BW_BITRATE:
-                self.bqoe_path_spp.bandwidths[index1][index2] = BW_BITRATE * (
+            elif self.bqoe_path_spp.bw[index1][index2] > BW_BITRATE:
+                self.bqoe_path_spp.bw[index1][index2] = BW_BITRATE * (
                         float(self.bqoe_path_spp.numFlowsRound[index1][index2]) / float(
                     self.bqoe_path_spp.numFlowsRound[index1][index2] + 1))
             else:
-                self.bqoe_path_spp.bandwidths[index1][index2] = self.bqoe_path_spp.bandwidths[index1][index2] * (
+                self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] * (
                         float(self.bqoe_path_spp.numFlowsRound[index1][index2]) / float(
                     self.bqoe_path_spp.numFlowsRound[index1][index2] + 1))
 
@@ -1946,20 +1946,19 @@ class BQoEPathController(ControllerBase):
         else:
             min_sp = nx.shortest_path(graph, source=src, target=dst, weight='rtt')
 
-        humanmin_sp = []
-        for elem in min_sp:
-            humanmin_sp = [self.bqoe_path_spp.host_from_switch(elem)] + humanmin_sp
+        humanmin_sp = [self.bqoe_path_spp.host_from_switch(elem) for elem in min_sp]
+        print(min_sp, humanmin_sp)
 
         final_mos = self.bqoe_path_spp.calculate_composed_mos(humanmin_sp)
         final_tp = 10000000000
         for i in range(0, (len(humanmin_sp) - 2)):
             index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
             index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
-            if self.bqoe_path_spp.bandwidths[index1][index2] < final_tp:
-                final_tp = self.bqoe_path_spp.bandwidths[index1][index2]
-            self.bqoe_path_spp.bandwidths[index1][index2] = self.bqoe_path_spp.bandwidths[index1][index2] - BW_BITRATE
-            if self.bqoe_path_spp.bandwidths[index1][index2] < 0:
-                self.bqoe_path_spp.bandwidths[index1][index2] = 0.0
+            if self.bqoe_path_spp.bw[index1][index2] < final_tp:
+                final_tp = self.bqoe_path_spp.bw[index1][index2]
+            self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] - BW_BITRATE
+            if self.bqoe_path_spp.bw[index1][index2] < 0:
+                self.bqoe_path_spp.bw[index1][index2] = 0.0
 
         result = dict(mos=final_mos, tp=final_tp, dst=humanmin_sp[0],
                       dest_ip=self.bqoe_path_spp.ip_from_host(humanmin_sp[0]), path=humanmin_sp)
@@ -2050,8 +2049,8 @@ class BQoEPathController(ControllerBase):
         for i in range(0, (len(humanmin_sp) - 2)):
             index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
             index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
-            if self.bqoe_path_spp.bandwidths[index1][index2] < final_tp:
-                final_tp = self.bqoe_path_spp.bandwidths[index1][index2]
+            if self.bqoe_path_spp.bw[index1][index2] < final_tp:
+                final_tp = self.bqoe_path_spp.bw[index1][index2]
         # self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] - BW_BITRATE
         # if self.bqoe_path_spp.bw[index1][index2] < 0:
         #    self.bqoe_path_spp.bw[index1][index2] = 0.0
@@ -2174,7 +2173,7 @@ class BQoEPathController(ControllerBase):
         for u, v, d in graph.edges(data=True):
             p1 = self.bqoe_path_spp.host_from_switch(u)
             p2 = self.bqoe_path_spp.host_from_switch(v)
-            d['bw'] = 1 / (self.bqoe_path_spp.bandwidths[self.bqoe_path_spp.nodes.index(p1)][
+            d['bw'] = 1 / (self.bqoe_path_spp.bw[self.bqoe_path_spp.nodes.index(p1)][
                                self.bqoe_path_spp.nodes.index(p2)] + 1.0)
         #   if (u == p1 and v == p2) or (u == p2 and v == p1):
         #        d['rtt'] = float(w)
@@ -2213,8 +2212,8 @@ class BQoEPathController(ControllerBase):
         for i in range(0, (len(humanmin_sp) - 2)):
             index2 = self.bqoe_path_spp.nodes.index(humanmin_sp[i + 1])
             index1 = self.bqoe_path_spp.nodes.index(humanmin_sp[i])
-            if self.bqoe_path_spp.bandwidths[index1][index2] < final_tp:
-                final_tp = self.bqoe_path_spp.bandwidths[index1][index2]
+            if self.bqoe_path_spp.bw[index1][index2] < final_tp:
+                final_tp = self.bqoe_path_spp.bw[index1][index2]
         # self.bqoe_path_spp.bw[index1][index2] = self.bqoe_path_spp.bw[index1][index2] - BW_BITRATE
         # if self.bqoe_path_spp.bw[index1][index2] < 0:
         #    self.bqoe_path_spp.bw[index1][index2] = 0.0

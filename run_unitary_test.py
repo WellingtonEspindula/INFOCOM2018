@@ -26,6 +26,7 @@ MAX_THREADS = multiprocessing.cpu_count()
 CONTROLLER_API_HOSTNAME = "localhost"
 CONTROLLER_API_PORT = 8080
 
+output_file = 'results/nm_last_results.csv'
 
 class Protocol(Enum):
     UDP = 0
@@ -263,7 +264,13 @@ class Schedule:
                     download_avg,
                 ]
 
-                self.store_result("results/nm_last_results.csv", data)
+                self.store_result(output_file, data)
+               
+                if name == 'rtt':
+                    link_data = [self.agent_hostname, self.manager_hostname, (float(upload_avg)/2), 0, 0,]
+                    self.store_result("link_last_results.csv", link_data)
+                    link_data = [self.manager_hostname, self.agent_hostname, (float(upload_avg)/2), 0, 0,]
+                    self.store_result("link_last_results.csv", link_data)
 
             shutil.move(f"agent-{self.uuid}.xml", f"./results/xml/agent-{self.uuid}.xml")
 
@@ -376,7 +383,9 @@ def is_manager_busy(manager: str) -> Optional[int]:
     for result in netstat_results:
         formatted_result = [r for r in result.replace(' \t', '').split(' ') if r != '']
         if len(formatted_result) >= 7 and formatted_result[3].find(manager_port) != -1:
-            return int(re.match(r'(\d+)/\w+', formatted_result[6]).group(1))
+            pid_busy_port = re.match(r'(\d+)/\w+', formatted_result[6])
+            if pid_busy_port is not None:
+                return int(re.match(r'(\d+)/\w+', formatted_result[6]).group(1))
     return None
 
 
@@ -427,10 +436,10 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
     pid_manager_port_busy = is_manager_busy(renamed_manager)
     print(f"Is manager {renamed_manager} busy: {pid_manager_port_busy is not None}")
     while pid_manager_port_busy is not None:
-        pid_manager_port_busy = is_manager_busy(renamed_manager)
         print(f"Waiting for manager {renamed_manager} free the port up...")
         os.system(f'{m} {renamed_manager} kill -9 {pid_manager_port_busy}')
         time.sleep(5)
+        pid_manager_port_busy = is_manager_busy(renamed_manager)
     # Starts metric manager first
     command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
     print(command)
@@ -463,6 +472,7 @@ if __name__ == '__main__':
     # parser.add_argument("-f", "--fast", help="fast initial trigger", action="store_true")
     # parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
     parser.add_argument("-f", "--file", help="Open from a file", type=str, nargs='?')
+    parser.add_argument("-o", "--output", help='File to store results', type=str, nargs='?')
     opts, rem_args = parser.parse_known_args()
     if opts.file is None:
         parser.add_argument("-m", "--manager", help="Uses Manager", action="store_true")
@@ -482,6 +492,7 @@ if __name__ == '__main__':
         manager_hostname = args.manager_hostname
         uses_manager = args.manager
         start_manager = args.start_metricman
+        output_file = args.output
 
         if not os.path.exists("results"):
             os.makedirs("results")
@@ -501,6 +512,7 @@ if __name__ == '__main__':
     else:
         args = parser.parse_args()
         file_input = args.file
+        output_file = args.output
 
         # print(find_managers(file_input), len(find_managers(file_input)))
         start_managers(find_managers(file_input))
@@ -525,4 +537,3 @@ if __name__ == '__main__':
 
                     run_unitary_measure(agent_hostname, manager_hostname, first_trigger_time_seconds)
 
-        print("Measurements should be over!")
