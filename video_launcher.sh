@@ -50,9 +50,9 @@ do
       /home/mininet/mininet/util/m "$host" bash "player_wrapper.sh $destination $UUID $host $destination_name $LOGPATH muse 32 5" & #5 min
   elif [ "$qv" -eq 1 ]
   then
-      /home/mininet/mininet/util/m "$host" bash "player_wrapper.sh $destination $UUID $host $destination_name $LOGPATH ny 119 20" & #20 min
+      /home/mininet/mininet/util/m "$host" bash "player_wrapper.sh $destination $UUID $host $destination_name $LOGPATH lumineers 121 20" & #20 min
   else
-      /home/mininet/mininet/util/m "$host" bash "player_wrapper.sh $destination $UUID $host $destination_name $LOGPATH gt 241 40" & #40 min
+      /home/mininet/mininet/util/m "$host" bash "player_wrapper.sh $destination $UUID $host $destination_name $LOGPATH orgb 241 40" & #40 min
   fi
   sleep "$sleep_fraction"
 done < static_trace.csv

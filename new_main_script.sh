@@ -15,4 +15,8 @@ sudo $m cdn2 ./start_apache.sh cdn2
 sudo $m cdn3 ./start_apache.sh cdn3
 sudo $m ext1 ./start_apache.sh ext1
 echo "[INFO] Starting player wrapper"
-./video_launcher.sh
+if [ ! -e '/tmp/video-log.txt']
+then
+	touch /tmp/video-log.txt
+fi
+./video_launcher.sh /tmp/video-log.txt
