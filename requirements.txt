@@ -3,4 +3,7 @@ networkx>=2.5.1
 gevent
 greenlet>=1.1.1
 eventlet==0.30.2
-mininet
+mininet~=2.3.0.dev6
+WebOb~=1.8.7
+uuid~=1.30
+requests~=2.25.1

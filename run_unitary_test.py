@@ -28,6 +28,7 @@ CONTROLLER_API_PORT = 8080
 
 output_file = 'results/nm_last_results.csv'
 
+
 class Protocol(Enum):
     UDP = 0
     TCP = 1
@@ -265,11 +266,11 @@ class Schedule:
                 ]
 
                 self.store_result(output_file, data)
-               
+
                 if name == 'rtt':
-                    link_data = [self.agent_hostname, self.manager_hostname, (float(upload_avg)/2), 0, 0,]
+                    link_data = [self.agent_hostname, self.manager_hostname, (float(upload_avg) / 2), 0, 0, ]
                     self.store_result("link_last_results.csv", link_data)
-                    link_data = [self.manager_hostname, self.agent_hostname, (float(upload_avg)/2), 0, 0,]
+                    link_data = [self.manager_hostname, self.agent_hostname, (float(upload_avg) / 2), 0, 0, ]
                     self.store_result("link_last_results.csv", link_data)
 
             shutil.move(f"agent-{self.uuid}.xml", f"./results/xml/agent-{self.uuid}.xml")
@@ -536,4 +537,3 @@ if __name__ == '__main__':
                     first_trigger_time_seconds = float(line[2]) * 60
 
                     run_unitary_measure(agent_hostname, manager_hostname, first_trigger_time_seconds)
-
