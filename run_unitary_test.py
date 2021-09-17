@@ -11,6 +11,7 @@ import threading
 from threading import Thread
 import time
 import uuid
+import math
 from argparse import ArgumentParser
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -480,6 +481,8 @@ if __name__ == '__main__':
         parser.add_argument("-sm", "--start_metricman", help="Start Netmetric Manager on Manager", action="store_true")
         parser.add_argument("-stt", "--start_trigger_time", type=float, nargs='?',
                             help="How long it takes to start the measures")
+        parser.add_argument("--rounds", type=int, nargs='?',
+                            help="How many measures should be done")
         parser.add_argument("agent_hostname", type=str, help="Agent hostname")
         parser.add_argument("manager_hostname", type=str, help="Manager hostname")
         args = parser.parse_args(rem_args, opts)
@@ -494,6 +497,8 @@ if __name__ == '__main__':
         uses_manager = args.manager
         start_manager = args.start_metricman
         output_file = args.output
+        rounds = args.rounds if args.rounds is not None else math.inf
+        print(rounds)
 
         if not os.path.exists("results"):
             os.makedirs("results")

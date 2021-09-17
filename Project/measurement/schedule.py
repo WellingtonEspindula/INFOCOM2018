@@ -1,6 +1,7 @@
 import shutil
 import time
 import uuid as uuid
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -71,9 +72,9 @@ class Schedule:
         filename = f"/tmp/schedule-{self.uuid}.xml"
         _command = f"{MININET_M} {self.agent_hostname} /usr/netmetric/sbin/metricagent -c -f {filename} -w -l 1000 -u " \
                    f"100 -u {self.uuid} "
-        # os.system(_command)
-        time.sleep(2)
-        # self.read_store_results()
+        os.system(_command)
+        # time.sleep(2)
+        self.read_store_results()
         self.schedule_listener.measure_finished()
 
     def read_results(self) -> list[tuple[Metric, int, int]]:
@@ -122,6 +123,7 @@ class Schedule:
 
     def read_store_results(self) -> None:
         filename = f"agent-{self.uuid}.xml"
+        print(f'{filename=}')
         root = ElementTree.parse(filename).getroot()
 
         current_timestamp = str(datetime.now())
