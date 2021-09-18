@@ -199,7 +199,7 @@ class Schedule:
         print(_command)
         os.system(_command)
         self.read_store_results()
-        # measurement_finish()
+        measurement_finish()
 
     def __create(self, agent_hostname: str, manager_ip: str, port: int = 12001) -> str:
         plugins = "".join(
@@ -328,8 +328,8 @@ def measurement_service(agent_hostname: str, manager_hostname: str, first_trigge
     while finished_rounds < rounds:
         schedule = Schedule(agent_hostname, manager_hostname, metric)
         schedule.create_and_save()
-        # enqueue_schedule(schedule)
-        schedule.measure()
+        enqueue_schedule(schedule)
+        #schedule.measure()
 
         time.sleep(period_in_seconds)
         finished_rounds += 1
