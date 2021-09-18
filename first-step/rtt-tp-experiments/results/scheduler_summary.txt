@@ -1,0 +1,100 @@
++----------+----------------+------------+------------+------------+---------------+-----------+
+| topology |     metric     |    mean    |    min     |    max     |     stdev     | theorical |
++----------+----------------+------------+------------+------------+---------------+-----------+
+|    1     | throughput_tcp | 91.2 Mbps  | 91.2 Mbps  | 91.2 Mbps  |  0.00202 Mbps |  95 Mbps  |
+|    1     |      rtt       |  2.13 ms   |  2.12 ms   |  2.14 ms   |   0.00671 ms  |    2 ms   |
+|    1     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    2     | throughput_tcp | 1.45 Mbps  | 1.43 Mbps  | 1.49 Mbps  |  0.0211 Mbps  |   2 Mbps  |
+|    2     |      rtt       |  2.13 ms   |  2.12 ms   |  2.14 ms   |   0.00696 ms  |    2 ms   |
+|    2     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    3     | throughput_tcp | 86.2 Mbps  | 86.2 Mbps  | 86.2 Mbps  |  0.0157 Mbps  |  90 Mbps  |
+|    3     |      rtt       |  6.14 ms   |  6.13 ms   |  6.15 ms   |   0.00668 ms  |    6 ms   |
+|    3     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    4     | throughput_tcp | 4.49 Mbps  | 4.34 Mbps  | 4.56 Mbps  |  0.0772 Mbps  |   5 Mbps  |
+|    4     |      rtt       |  6.14 ms   |  6.13 ms   |  6.15 ms   |   0.00801 ms  |    6 ms   |
+|    4     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    5     | throughput_tcp | 76.4 Mbps  | 76.4 Mbps  | 76.4 Mbps  |  0.0112 Mbps  |  80 Mbps  |
+|    5     |      rtt       |  10.2 ms   |  10.1 ms   |  10.2 ms   |   0.00832 ms  |   10 ms   |
+|    5     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    6     | throughput_tcp |  9.6 Mbps  |  9.6 Mbps  | 9.61 Mbps  |  0.00346 Mbps |  10 Mbps  |
+|    6     |      rtt       |  10.2 ms   |  10.1 ms   |  10.2 ms   |   0.0135 ms   |   10 ms   |
+|    6     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    7     | throughput_tcp | 14.4 Mbps  | 14.4 Mbps  | 14.4 Mbps  |  0.00279 Mbps |  15 Mbps  |
+|    7     |      rtt       |  14.1 ms   |  14.1 ms   |  14.2 ms   |    0.025 ms   |   14 ms   |
+|    7     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    8     | throughput_tcp | 66.4 Mbps  | 66.4 Mbps  | 66.4 Mbps  |  0.00227 Mbps |  70 Mbps  |
+|    8     |      rtt       |  18.2 ms   |  18.1 ms   |  18.2 ms   |   0.00935 ms  |   18 ms   |
+|    8     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    9     | throughput_tcp | 19.2 Mbps  | 19.2 Mbps  | 19.2 Mbps  | 0.000586 Mbps |  20 Mbps  |
+|    9     |      rtt       |  18.2 ms   |  18.1 ms   |  18.2 ms   |   0.00845 ms  |   18 ms   |
+|    9     |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    10    | throughput_tcp | 61.5 Mbps  | 61.5 Mbps  | 61.5 Mbps  |  0.00549 Mbps |  65 Mbps  |
+|    10    |      rtt       |  22.2 ms   |  22.1 ms   |  22.2 ms   |   0.0107 ms   |   22 ms   |
+|    10    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    11    | throughput_tcp | 23.9 Mbps  | 23.9 Mbps  | 23.9 Mbps  | 0.000626 Mbps |  25 Mbps  |
+|    11    |      rtt       |  22.1 ms   |  22.1 ms   |  22.2 ms   |   0.0211 ms   |   22 ms   |
+|    11    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    12    | throughput_tcp | 56.6 Mbps  | 56.6 Mbps  | 56.6 Mbps  |  0.00346 Mbps |  60 Mbps  |
+|    12    |      rtt       |  26.2 ms   |  26.1 ms   |  26.2 ms   |   0.0124 ms   |   26 ms   |
+|    12    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    13    | throughput_tcp | 28.7 Mbps  | 28.7 Mbps  | 28.7 Mbps  | 0.000166 Mbps |  30 Mbps  |
+|    13    |      rtt       |  26.2 ms   |  26.1 ms   |  26.2 ms   |   0.0103 ms   |   26 ms   |
+|    13    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    14    | throughput_tcp | 51.8 Mbps  | 51.8 Mbps  | 51.8 Mbps  |  0.00295 Mbps |  55 Mbps  |
+|    14    |      rtt       |  30.1 ms   |  30.1 ms   |  30.2 ms   |   0.0168 ms   |   30 ms   |
+|    14    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    15    | throughput_tcp | 33.3 Mbps  | 33.3 Mbps  | 33.3 Mbps  |  0.0004 Mbps  |  35 Mbps  |
+|    15    |      rtt       |  30.2 ms   |  30.1 ms   |  30.2 ms   |   0.0119 ms   |   30 ms   |
+|    15    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    16    | throughput_tcp | 47.0 Mbps  | 47.0 Mbps  | 47.1 Mbps  |  0.0348 Mbps  |  50 Mbps  |
+|    16    |      rtt       |  34.2 ms   |  34.1 ms   |  34.2 ms   |   0.0139 ms   |   34 ms   |
+|    16    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    17    | throughput_tcp | 46.7 Mbps  | 46.7 Mbps  | 46.7 Mbps  |  0.00803 Mbps |  50 Mbps  |
+|    17    |      rtt       |  42.2 ms   |  42.1 ms   |  42.2 ms   |   0.0117 ms   |   42 ms   |
+|    17    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    18    | throughput_tcp | 33.0 Mbps  | 33.0 Mbps  | 33.0 Mbps  |  0.00105 Mbps |  35 Mbps  |
+|    18    |      rtt       |  46.2 ms   |  46.1 ms   |  46.2 ms   |   0.0114 ms   |   46 ms   |
+|    18    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    19    | throughput_tcp | 50.9 Mbps  | 50.9 Mbps  | 50.9 Mbps  |  0.00301 Mbps |  55 Mbps  |
+|    19    |      rtt       |  46.2 ms   |  46.1 ms   |  46.2 ms   |   0.00798 ms  |   46 ms   |
+|    19    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    20    | throughput_tcp | 28.3 Mbps  | 28.3 Mbps  | 28.3 Mbps  | 0.000822 Mbps |  30 Mbps  |
+|    20    |      rtt       |  50.2 ms   |  50.1 ms   |  50.2 ms   |   0.0122 ms   |   50 ms   |
+|    20    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    21    | throughput_tcp | 55.0 Mbps  | 54.9 Mbps  | 55.0 Mbps  |  0.00717 Mbps |  60 Mbps  |
+|    21    |      rtt       |  50.2 ms   |  50.1 ms   |  50.2 ms   |   0.0109 ms   |   50 ms   |
+|    21    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    22    | throughput_tcp | 23.6 Mbps  | 23.6 Mbps  | 23.6 Mbps  |  0.00058 Mbps |  25 Mbps  |
+|    22    |      rtt       |  60.1 ms   |  60.1 ms   |  60.2 ms   |   0.0273 ms   |   60 ms   |
+|    22    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    23    | throughput_tcp | 58.4 Mbps  | 58.4 Mbps  | 58.4 Mbps  |  0.00464 Mbps |  65 Mbps  |
+|    23    |      rtt       |  60.2 ms   |  60.1 ms   |  60.2 ms   |   0.0129 ms   |   60 ms   |
+|    23    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    24    | throughput_tcp | 18.9 Mbps  | 18.9 Mbps  | 18.9 Mbps  | 0.000146 Mbps |  20 Mbps  |
+|    24    |      rtt       |  80.2 ms   |  80.1 ms   |  80.2 ms   |   0.0106 ms   |   80 ms   |
+|    24    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    25    | throughput_tcp | 60.1 Mbps  | 60.1 Mbps  | 60.1 Mbps  |  0.0151 Mbps  |  70 Mbps  |
+|    25    |      rtt       |  80.2 ms   |  80.1 ms   |  80.2 ms   |   0.0113 ms   |   80 ms   |
+|    25    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    26    | throughput_tcp | 14.1 Mbps  | 14.0 Mbps  | 14.1 Mbps  |  0.0653 Mbps  |  15 Mbps  |
+|    26    |      rtt       |  1e+02 ms  |  1e+02 ms  |  1e+02 ms  |   0.0254 ms   |   100 ms  |
+|    26    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    27    | throughput_tcp |  9.3 Mbps  | 9.29 Mbps  | 9.31 Mbps  |  0.00481 Mbps |  10 Mbps  |
+|    27    |      rtt       | 1.4e+02 ms | 1.4e+02 ms | 1.4e+02 ms |   0.0125 ms   |   140 ms  |
+|    27    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    28    | throughput_tcp | 59.2 Mbps  | 59.2 Mbps  | 59.2 Mbps  |  0.00201 Mbps |  80 Mbps  |
+|    28    |      rtt       | 1.4e+02 ms | 1.4e+02 ms | 1.4e+02 ms |   0.0433 ms   |   140 ms  |
+|    28    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    29    | throughput_tcp | 3.72 Mbps  | 3.39 Mbps  | 4.61 Mbps  |   0.457 Mbps  |   5 Mbps  |
+|    29    |      rtt       | 1.8e+02 ms | 1.8e+02 ms | 1.8e+02 ms |   0.00828 ms  |   180 ms  |
+|    29    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    30    | throughput_tcp | 58.6 Mbps  | 58.6 Mbps  | 58.6 Mbps  |  0.00704 Mbps |  90 Mbps  |
+|    30    |      rtt       | 1.8e+02 ms | 1.8e+02 ms | 1.8e+02 ms |   0.0151 ms   |   180 ms  |
+|    30    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    31    | throughput_tcp | 1.72 Mbps  | 1.63 Mbps  | 1.75 Mbps  |  0.0455 Mbps  |   2 Mbps  |
+|    31    |      rtt       | 2.4e+02 ms | 2.4e+02 ms | 2.4e+02 ms |   0.00504 ms  |   240 ms  |
+|    31    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
+|    32    | throughput_tcp | 52.4 Mbps  | 52.4 Mbps  | 52.4 Mbps  |  0.00316 Mbps |  95 Mbps  |
+|    32    |      rtt       | 2.4e+02 ms | 2.4e+02 ms | 2.4e+02 ms |   0.0164 ms   |   240 ms  |
+|    32    |      loss      |    0.0     |    0.0     |    0.0     |      0.0      |     0     |
++----------+----------------+------------+------------+------------+---------------+-----------+
