@@ -12,7 +12,7 @@ if sys.argv[1] == None or not sys.argv[1]:
 with open(sys.argv[1], 'r') as file:
     r = csv.reader(file, delimiter=';')
     metrics = ['throughput_tcp', 'rtt', 'loss'];
-    table = PrettyTable(['topology', 'metric', 'mean', 'min', 'max', 'stdev', 'theorical'])
+    table = PrettyTable(['topology', 'metric', 'mean', 'min', 'max', 'stdev', 'theorical', 'difference'])
     for i in range(1, 33):
         for metric in metrics:
             rtt_up = np.array([float(row[2]) for line, row in enumerate(r) if line != 0 and row[0] == f'{i:02}' and row[1] == metric])
@@ -23,12 +23,18 @@ with open(sys.argv[1], 'r') as file:
             #print(theorical_results.group(1), theorical_results.group(2))
 
             if (metric == 'throughput_tcp'):
-                table.add_row([i, metric, f'{mean*10**(-6):.3} Mbps', f'{_min*10**(-6):.3} Mbps', f'{_max*10**(-6):.3} Mbps', f'{stdev*10**(-6):.3} Mbps', f'{theorical_results.group(1)} Mbps'])
+                measured_tp_mean_Mbps = mean*10**(-6)
+                theorical_tp_Mbps = float(theorical_results.group(1))
+                diff_Mbps = abs(measured_tp_mean_Mbps - theorical_tp_Mbps)
+                table.add_row([i, metric, f'{measured_tp_mean_Mbps:.3} Mbps', f'{_min*10**(-6):.3} Mbps', f'{_max*10**(-6):.3} Mbps', f'{stdev*10**(-6):.3} Mbps', f'{theorical_tp_Mbps} Mbps', f'{diff_Mbps:.3} Mbps'])
             elif metric == 'rtt':
-                table.add_row([i, metric, f'{mean*10**(3):.3} ms', f'{_min*10**(3):.3} ms', f'{_max*10**(3):.3} ms', f'{stdev*10**(3):.3} ms', f'{int(theorical_results.group(2))*2} ms'])
+                measured_rtt_mean_ms = mean*10**(3)
+                theorical_rtt_ms = int(theorical_results.group(2))*2
+                diff_ms = abs(measured_rtt_mean_ms - theorical_rtt_ms)
+                table.add_row([i, metric, f'{measured_rtt_mean_ms:.3} ms', f'{_min*10**(3):.3} ms', f'{_max*10**(3):.3} ms', f'{stdev*10**(3):.3} ms', f'{theorical_rtt_ms} ms', f'{diff_ms:.3} ms'])
 
             else:
-                table.add_row([i, metric, mean, _min, _max, stdev, 0])
+                table.add_row([i, metric, f'{mean} %', f'{_min} %', f'{_max} %', f'{stdev} %', f'{0} %', f'{abs(mean-0):.3} %'])
 
             file.seek(0)
     print(table)

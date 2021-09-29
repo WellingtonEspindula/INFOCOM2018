@@ -55,7 +55,7 @@ class MetricTypes(Enum):
                   protocol=Protocol.UDP, connections=1, time_mode=0, max_time=0)
     UDP_PACK = Metric(names=["rtt", "loss"], timeout=3, probe_size=100, train_length=1, train_count=20, gap=50000,
                       protocol=Protocol.UDP, connections=1, time_mode=0, max_time=0)
-    THROUGHPUT_TCP = Metric(names=["throughput_tcp"], timeout=12, probe_size=14520, train_length=1440, train_count=1,
+    THROUGHPUT_TCP = Metric(names=["throughput_tcp"], timeout=12, probe_size=14520, train_length=14400, train_count=1,
                             gap=100000, protocol=Protocol.TCP, connections=1, time_mode=2, max_time=12)
 
 
@@ -449,7 +449,8 @@ def run_manager(manager_hostname: str, uses_manager: bool = True):
         os.system(f'{m} {renamed_manager} killall -9 metricmanager')
         time.sleep(5)
     # Starts metric manager first
-    command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
+    #command = f"taskset -c {run_manager.core} {m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
+    command = f"{m} {renamed_manager} /usr/netmetric/sbin/metricmanager -c &"
     print(command)
     os.system(command)
     # Run Netmetric Manager using subprocess
