@@ -507,7 +507,7 @@ if __name__ == '__main__':
         manager_hostname = args.manager_hostname
         uses_manager = args.manager
         start_manager = args.start_metricman
-        output_file = args.output
+        output_file = args.output if args.output is not None else output_file
         rounds = args.rounds if args.rounds is not None else math.inf
         print(rounds)
 
