@@ -46,7 +46,7 @@ while read -r line; do
 
     curl -X GET "http://$host:$port/bqoepath/pathtomanager-$hostname-$manager" -s
 
-    python3.9 run_test.py -m "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" -ftt "$ftt" &
+    python3.9 run_test.py "$hostname" "$manager" "$polling_tp" "$polling_rtt" "$polling_loss" -stt "$ftt" &
     pid=$!
     echo $pid >>/tmp/pids_running.txt
     process_ids+=(pid)
